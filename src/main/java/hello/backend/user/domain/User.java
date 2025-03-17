@@ -1,9 +1,12 @@
-package hello.backend.domain;
+package hello.backend.user.domain;
 
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
@@ -11,6 +14,7 @@ import java.time.LocalDateTime;
 @Table(name = "users")
 @Getter @Setter
 @NoArgsConstructor
+@EntityListeners(AuditingEntityListener.class) //Auditing 기능, 생성, 업데이트 자동 적용
 public class User {
 
     @Id
@@ -26,26 +30,16 @@ public class User {
     @Column(nullable = false)
     private String password;
 
+    @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createAt;
 
+    @LastModifiedDate
     @Column(name = "update_at", nullable = false)
     private LocalDateTime updateAt;
 
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = false;
-
-    @PrePersist
-    protected void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
-        this.createAt = now;
-        this.updateAt = now;
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        this.updateAt = LocalDateTime.now();
-    }
 
     public User(String name, String email, String password) {
         this.name = name;
