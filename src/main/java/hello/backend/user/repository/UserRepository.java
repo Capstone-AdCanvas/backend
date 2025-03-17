@@ -1,6 +1,6 @@
-package hello.backend.repository;
+package hello.backend.user.repository;
 
-import hello.backend.domain.User;
+import hello.backend.user.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
