@@ -25,7 +25,12 @@ public class UserService {
             throw new BadRequestException("이미 사용 중인 닉네임 입니다.");
         }
 
-        User user = new User(name, email, password);
+        User user = User.builder()
+                .name(name)
+                .email(email)
+                .password(password)
+                .build();
+
         return userRepository.save(user);
     }
 
