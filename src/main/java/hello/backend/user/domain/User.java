@@ -39,9 +39,6 @@ public class User {
     @Column(name = "update_at", nullable = false)
     private LocalDateTime updateAt;
 
-    @Column(name = "is_deleted", nullable = false)
-    private Boolean isDeleted = false;
-
     @Builder
     public User(String name, String email, String password) {
         this.name = name;
