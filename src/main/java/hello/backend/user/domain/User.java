@@ -1,6 +1,7 @@
 package hello.backend.user.domain;
 
 import jakarta.persistence.*;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -41,6 +42,7 @@ public class User {
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = false;
 
+    @Builder
     public User(String name, String email, String password) {
         this.name = name;
         this.email = email;
