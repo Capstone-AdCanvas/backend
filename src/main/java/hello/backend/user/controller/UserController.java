@@ -43,11 +43,11 @@ public class UserController {
             @ApiResponse(responseCode = "200", description = "회원 조회 성공"),
             @ApiResponse(responseCode = "404", description = "잘못된 요청: 회원을 찾을 수 없음")
     })
-    @GetMapping("/{id}")
+    @GetMapping("/{userId}")
     public ResponseEntity<User> getUser(
             @Parameter(description = "조회할 회원의 ID", required = true)
-            @PathVariable Long id) {
-        User user = userService.getUser(id);
+            @PathVariable Long userId) {
+        User user = userService.getUser(userId);
         return new ResponseEntity<>(user, HttpStatus.OK);
     }
 
@@ -56,7 +56,7 @@ public class UserController {
             @ApiResponse(responseCode = "200", description = "회원 전체조회 성공"),
             @ApiResponse(responseCode = "404", description = "잘못된 요청: 회원을 찾을 수 없음")
     })
-    @GetMapping("/users")
+    @GetMapping()
     public ResponseEntity<List<User>> getAllUser() {
         List<User> users = userService.getAllUser();
         return new ResponseEntity<>(users, HttpStatus.OK);
@@ -84,11 +84,11 @@ public class UserController {
             @ApiResponse(responseCode = "200", description = "회원 삭제 성공"),
             @ApiResponse(responseCode = "404", description = "잘못된 요청: 회원을 찾을 수 없음")
     })
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{userId}")
     public ResponseEntity<User> deleteUser(
             @Parameter(description = "조회할 회원의 ID", required = true)
-            @PathVariable Long id) {
-        User user = userService.deleteUser(id);
+            @PathVariable Long userId) {
+        User user = userService.deleteUser(userId);
 
         return new ResponseEntity<>(user, HttpStatus.OK);
     }
