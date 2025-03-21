@@ -45,4 +45,5 @@ target/
 .gradle/
 *.log
 .env
+resources/application.yml
 
