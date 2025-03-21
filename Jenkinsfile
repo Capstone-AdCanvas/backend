@@ -11,7 +11,7 @@ pipeline {
         stage('Checkout') {
             steps {
 		        cleanWs()
-                git branch: 'develop', url: "https://github.com/Capstone-AdCanvas/backend.git"
+                checkout scm
             }
         }
 
