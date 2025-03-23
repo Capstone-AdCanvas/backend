@@ -1,10 +1,14 @@
 package hello.backend.image.service;
 
 import hello.backend.exception.BadRequestException;
+import hello.backend.exception.InvalidFileException;
+import hello.backend.exception.NotFoundException;
 import hello.backend.image.domain.AdImage;
+import hello.backend.image.dto.ImageResponse;
 import hello.backend.image.repository.AdImageRepository;
 import hello.backend.user.domain.User;
 import hello.backend.user.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -13,7 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.time.LocalDateTime;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -26,13 +30,16 @@ public class AdImageService {
     @Value("${file.upload-dir}")
     private String uploadDir;
 
+    private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png");
+
     // 이미지 업로드
-    public AdImage uploadImage(Long userId, MultipartFile image) throws IOException {
+    @Transactional
+    public ImageResponse uploadImage(Long userId, MultipartFile image) throws IOException {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BadRequestException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다."));
 
         if (image.isEmpty()) {
-            throw new BadRequestException("업로드된 파일이 비어 있습니다.");
+            throw new InvalidFileException("업로드된 파일이 비어 있습니다.");
         }
 
         String savedFilePath = saveFile(image);
@@ -40,14 +47,23 @@ public class AdImageService {
         AdImage adImage = AdImage.builder()
                 .user(user)
                 .originalImage(savedFilePath)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
                 .build();
 
-        return adImageRepository.save(adImage);
+        AdImage savedImage = adImageRepository.save(adImage);
+
+        return toImageResponse(savedImage);
+    }
+
+    private ImageResponse toImageResponse(AdImage adImage) {
+        return new ImageResponse(
+                adImage.getId(),
+                adImage.getUser().getId(),
+                adImage.getOriginalImage()
+        );
     }
 
     // 이미지 저장
+    @Transactional
     public String saveFile(MultipartFile image) throws IOException {
         File directory = new File(uploadDir);
 
@@ -55,26 +71,27 @@ public class AdImageService {
             throw new BadRequestException("파일 저장 경로를 생성할 수 없습니다.");
         }
 
-        // 원본 파일명 확인
         String originalFilename = image.getOriginalFilename();
         if (originalFilename == null || originalFilename.trim().isEmpty()) {
-            throw new BadRequestException("파일명이 유효하지 않습니다.");
+            throw new InvalidFileException("파일명이 유효하지 않습니다.");
         }
 
-        // 확장자 확인
         int lastDotIndex = originalFilename.lastIndexOf(".");
         if (lastDotIndex == -1) {
-            throw new BadRequestException("파일에 확장자가 없습니다.");
+            throw new InvalidFileException("파일 확장자가 없습니다.");
         }
 
-        String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-        String newFileName = UUID.randomUUID().toString() + extension;
+        String extension = originalFilename.substring(lastDotIndex + 1).toLowerCase();
+        if (!ALLOWED_EXTENSIONS.contains(extension)) {
+            throw new InvalidFileException("지원되지 않는 파일 형식입니다. (허용된 확장자: png, jpg, jpeg)");
+        }
 
-        String filePath = uploadDir + newFileName;
+        String newFileName = UUID.randomUUID().toString() + "." + extension;
+        String filePath = uploadDir + File.separator + newFileName;
+
         File dest = new File(filePath);
         image.transferTo(dest);
 
-        // 저장 후 실제 존재하는지 확인
         if (!Files.exists(dest.toPath())) {
             throw new BadRequestException("파일 저장에 실패하였습니다.");
         }
