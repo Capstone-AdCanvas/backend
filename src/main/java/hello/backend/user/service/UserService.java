@@ -1,8 +1,8 @@
 package hello.backend.user.service;
 
 import hello.backend.user.domain.User;
-import hello.backend.user.exception.BadRequestException;
-import hello.backend.user.exception.NotFoundException;
+import hello.backend.exception.BadRequestException;
+import hello.backend.exception.NotFoundException;
 import hello.backend.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
