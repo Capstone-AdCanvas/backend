@@ -45,5 +45,5 @@ target/
 .gradle/
 *.log
 .env
-resources/application.yml
-
+application.yml
+uploads/
