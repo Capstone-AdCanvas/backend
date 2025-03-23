@@ -14,6 +14,4 @@ public class ImageResponse {
     private Long id;
     private Long userId;
     private String originalImage;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 }
