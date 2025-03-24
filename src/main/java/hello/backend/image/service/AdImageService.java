@@ -1,6 +1,5 @@
 package hello.backend.image.service;
 
-import hello.backend.exception.BadRequestException;
 import hello.backend.exception.InvalidFileException;
 import hello.backend.exception.NotFoundException;
 import hello.backend.image.domain.AdImage;
@@ -10,15 +9,12 @@ import hello.backend.user.domain.User;
 import hello.backend.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.util.Set;
-import java.util.UUID;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -26,11 +22,7 @@ public class AdImageService {
 
     private final AdImageRepository adImageRepository;
     private final UserRepository userRepository;
-
-    @Value("${file.upload-dir}")
-    private String uploadDir;
-
-    private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png");
+    private final FileStorageService fileStorageService;
 
     // 이미지 업로드
     @Transactional
@@ -42,7 +34,7 @@ public class AdImageService {
             throw new InvalidFileException("업로드된 파일이 비어 있습니다.");
         }
 
-        String savedFilePath = saveFile(image);
+        String savedFilePath = fileStorageService.saveFile(image);
 
         AdImage adImage = AdImage.builder()
                 .user(user)
@@ -54,6 +46,34 @@ public class AdImageService {
         return toImageResponse(savedImage);
     }
 
+    // 전체 이미지 조회
+    public List<ImageResponse> getAllImages() {
+        List<AdImage> images = adImageRepository.findAll();
+        return images.stream()
+                .map(this::toImageResponse)
+                .toList();
+    }
+
+    // 사용자 이미지 조회
+    public List<ImageResponse> getUserImages(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다."));
+
+        List<AdImage> images = adImageRepository
+                .findAllByUserId(user.getId());
+
+        return images.stream()
+                .map(this::toImageResponse)
+                .toList();
+    }
+
+    // 특정 이미지 조회
+    public ImageResponse getImage(Long imageId) {
+        AdImage image = adImageRepository.findById(imageId)
+                .orElseThrow(() -> new NotFoundException("이미지를 찾을 수 없습니다."));
+        return toImageResponse(image);
+    }
+
     private ImageResponse toImageResponse(AdImage adImage) {
         return new ImageResponse(
                 adImage.getId(),
@@ -62,40 +82,4 @@ public class AdImageService {
         );
     }
 
-    // 이미지 저장
-    @Transactional
-    public String saveFile(MultipartFile image) throws IOException {
-        File directory = new File(uploadDir);
-
-        if (!directory.exists() && !directory.mkdirs()) {
-            throw new BadRequestException("파일 저장 경로를 생성할 수 없습니다.");
-        }
-
-        String originalFilename = image.getOriginalFilename();
-        if (originalFilename == null || originalFilename.trim().isEmpty()) {
-            throw new InvalidFileException("파일명이 유효하지 않습니다.");
-        }
-
-        int lastDotIndex = originalFilename.lastIndexOf(".");
-        if (lastDotIndex == -1) {
-            throw new InvalidFileException("파일 확장자가 없습니다.");
-        }
-
-        String extension = originalFilename.substring(lastDotIndex + 1).toLowerCase();
-        if (!ALLOWED_EXTENSIONS.contains(extension)) {
-            throw new InvalidFileException("지원되지 않는 파일 형식입니다. (허용된 확장자: png, jpg, jpeg)");
-        }
-
-        String newFileName = UUID.randomUUID().toString() + "." + extension;
-        String filePath = uploadDir + File.separator + newFileName;
-
-        File dest = new File(filePath);
-        image.transferTo(dest);
-
-        if (!Files.exists(dest.toPath())) {
-            throw new BadRequestException("파일 저장에 실패하였습니다.");
-        }
-
-        return filePath;
-    }
 }
