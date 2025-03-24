@@ -1,6 +1,4 @@
 package hello.backend.image.controller;
-
-import hello.backend.image.domain.AdImage;
 import hello.backend.image.dto.ImageResponse;
 import hello.backend.image.service.AdImageService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,8 +24,9 @@ public class ImageController {
     @Operation(summary = "이미지 업로드", description = "상품의 이미지를 업로드합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "업로드 성공"),
-            @ApiResponse(responseCode = "400", description = "파일 문제"),
-            @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음")
+            @ApiResponse(responseCode = "400", description = "잘못된 파일 형식 또는 업로드 오류"),
+            @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음"),
+            @ApiResponse(responseCode = "415", description = "지원되지 않는 미디어 타입")
     })
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ImageResponse> uploadImage(
@@ -35,5 +34,39 @@ public class ImageController {
             @RequestParam("image") MultipartFile image) throws IOException {
         ImageResponse response = adImageService.uploadImage(userId, image);
         return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @Operation(summary = "모든 이미지 조회", description = "모든 이미지를 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+    })
+    @GetMapping("")
+    public ResponseEntity<List<ImageResponse>> getAllImages() {
+        List<ImageResponse> images = adImageService.getAllImages();
+        return new ResponseEntity<>(images, HttpStatus.OK);
+    }
+
+    @Operation(summary = "특정 회원 이미지 조회", description = "특정 회원의 이미지를 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음")
+    })
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<ImageResponse>> getUserImages(
+            @PathVariable Long userId
+    ) {
+        List<ImageResponse> images = adImageService.getUserImages(userId);
+        return new ResponseEntity<>(images, HttpStatus.OK);
+    }
+
+    @Operation(summary = "특정 이미지 조회", description = "특정 이미지를 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "404", description = "이미지를 찾을 수 없음")
+    })
+    @GetMapping("/{imageId}")
+    public ResponseEntity<ImageResponse> getImage(@PathVariable Long imageId) {
+        ImageResponse image = adImageService.getImage(imageId);
+        return new ResponseEntity<>(image, HttpStatus.OK);
     }
 }
