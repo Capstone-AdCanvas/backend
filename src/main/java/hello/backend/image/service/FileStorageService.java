@@ -12,6 +12,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Set;
 import java.util.UUID;
 
@@ -59,6 +61,18 @@ public class FileStorageService {
             }
 
             return filePath;
+        } catch (IOException e) {
+            throw new InvalidFileException("파일 저장 중 오류가 발생했습니다.");
+        }
+    }
+
+    // 배경제거 이미지 파일로 저장
+    @Transactional
+    public void saveBgRemoveFile(byte[] imageBytes, String filePath) {
+        try {
+            Path path = Paths.get(filePath);
+            Files.createDirectories(path.getParent());
+            Files.write(Paths.get(filePath), imageBytes);
         } catch (IOException e) {
             throw new InvalidFileException("파일 저장 중 오류가 발생했습니다.");
         }
