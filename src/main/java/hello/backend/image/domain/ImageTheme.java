@@ -12,7 +12,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class AdImageTheme {
+public class ImageTheme {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
