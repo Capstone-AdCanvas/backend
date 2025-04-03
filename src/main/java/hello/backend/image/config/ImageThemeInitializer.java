@@ -1,7 +1,7 @@
 package hello.backend.image.config;
 
-import hello.backend.image.domain.AdImageTheme;
-import hello.backend.image.repository.AdImageThemeRepository;
+import hello.backend.image.domain.ImageTheme;
+import hello.backend.image.repository.ImageThemeRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
@@ -11,8 +11,8 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
-public class AdImageThemeInitializer implements CommandLineRunner {
-    private final AdImageThemeRepository adImageThemeRepository;
+public class ImageThemeInitializer implements CommandLineRunner {
+    private final ImageThemeRepository imageThemeRepository;
 
     @Override
     @Transactional
@@ -22,6 +22,10 @@ public class AdImageThemeInitializer implements CommandLineRunner {
 
     @Transactional
     public void initialize() {
+        if (imageThemeRepository.count() > 0) {
+            return;
+        }
+
         List<String> themes = List.of(
                 "auto",
                 "studio",
@@ -38,9 +42,9 @@ public class AdImageThemeInitializer implements CommandLineRunner {
         );
 
         for (String theme : themes) {
-            AdImageTheme adImageTheme = new AdImageTheme();
-            adImageTheme.setTheme(theme);
-            adImageThemeRepository.save(adImageTheme);
+            ImageTheme imageTheme = new ImageTheme();
+            imageTheme.setTheme(theme);
+            imageThemeRepository.save(imageTheme);
         }
     }
 }
