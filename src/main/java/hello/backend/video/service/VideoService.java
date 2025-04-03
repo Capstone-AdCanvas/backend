@@ -29,10 +29,10 @@ public class VideoService {
 
     //text-to-video 생성
     @Transactional
-    public JsonObject createTextToVideo(TextToVideoRequest request) {
+    public JsonObject createTextToVideo(TextToVideoRequest request, String finalprompt) {
 
         Map<String, Object> input = Map.of(
-                "prompt", request.getPrompt(),
+                "prompt", finalprompt,
                 "aspect_ratio", request.getAspect_ratio(),
                 "duration", request.getDuration()
         );
@@ -57,11 +57,11 @@ public class VideoService {
 
     //image-to-video 생성
     @Transactional
-    public JsonObject createImageToVideo(ImageToVideoRequest request) {
+    public JsonObject createImageToVideo(ImageToVideoRequest request, String finalprompt) {
 
         Map<String, Object> input = Map.of(
                 "image_url", request.getImageUrl(),
-                "prompt", request.getPrompt(),
+                "prompt", finalprompt,
                 "resolution", "1080p",
                 "aspect_ratio", request.getAspect_ratio(),
                 "duration", request.getDuration()
