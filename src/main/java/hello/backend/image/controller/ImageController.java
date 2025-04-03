@@ -1,17 +1,11 @@
 package hello.backend.image.controller;
-import hello.backend.image.config.AdImageThemeInitializer;
-import hello.backend.image.domain.AdImage;
-import hello.backend.image.dto.BgRemoveResponse;
 import hello.backend.image.dto.ImageResponse;
-import hello.backend.image.dto.ThemeResponse;
-import hello.backend.image.service.AdImageService;
-import hello.backend.image.service.AdImageThemeService;
+import hello.backend.image.service.ImageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,8 +19,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ImageController {
 
-    private final AdImageService adImageService;
-    private final AdImageThemeService adImageThemeService;
+    private final ImageService imageService;
 
     @Operation(summary = "이미지 업로드", description = "상품의 이미지를 업로드합니다.")
     @ApiResponses(value = {
@@ -39,7 +32,7 @@ public class ImageController {
     public ResponseEntity<ImageResponse> uploadImage(
             @RequestParam("userId") Long userId,
             @RequestParam("image") MultipartFile image) throws IOException {
-        ImageResponse response = adImageService.uploadImage(userId, image);
+        ImageResponse response = imageService.uploadImage(userId, image);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
@@ -49,7 +42,7 @@ public class ImageController {
     })
     @GetMapping("")
     public ResponseEntity<List<ImageResponse>> getAllImages() {
-        List<ImageResponse> images = adImageService.getAllImages();
+        List<ImageResponse> images = imageService.getAllImages();
         return new ResponseEntity<>(images, HttpStatus.OK);
     }
 
@@ -62,7 +55,7 @@ public class ImageController {
     public ResponseEntity<List<ImageResponse>> getUserImages(
             @PathVariable Long userId
     ) {
-        List<ImageResponse> images = adImageService.getUserImages(userId);
+        List<ImageResponse> images = imageService.getUserImages(userId);
         return new ResponseEntity<>(images, HttpStatus.OK);
     }
 
@@ -73,29 +66,7 @@ public class ImageController {
     })
     @GetMapping("/{imageId}")
     public ResponseEntity<ImageResponse> getImage(@PathVariable Long imageId) {
-        ImageResponse image = adImageService.getImage(imageId);
+        ImageResponse image = imageService.getImage(imageId);
         return new ResponseEntity<>(image, HttpStatus.OK);
-    }
-
-    @Operation(summary = "이미지 배경 제거", description = "상품의 배경을 제거합니다.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "조회 성공"),
-            @ApiResponse(responseCode = "400", description = "잘못된 요청 (이미지 응답 없음)"),
-            @ApiResponse(responseCode = "404", description = "이미지를 찾을 수 없음")
-    })
-    @PostMapping("/{imageId}/remove-bg")
-    public ResponseEntity<BgRemoveResponse> removeBg(@PathVariable Long imageId) {
-            BgRemoveResponse response = adImageService.removeBg(imageId);
-            return new ResponseEntity<>(response, HttpStatus.OK);
-    }
-
-    @Operation(summary = "이미지 테마 조회", description = "이미지의 테마를 조회합니다.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "조회 성공")
-    })
-    @GetMapping("/themes")
-    public ResponseEntity<List<ThemeResponse>> getThemes() {
-        List<ThemeResponse> themes = adImageThemeService.getThemes();
-        return new ResponseEntity<>(themes, HttpStatus.OK);
     }
 }
