@@ -1,8 +1,10 @@
 package hello.backend.image.controller;
 
 import hello.backend.image.dto.BgRemoveResponse;
+import hello.backend.image.dto.SizeResponse;
 import hello.backend.image.dto.ThemeResponse;
 import hello.backend.image.service.ImageBgService;
+import hello.backend.image.service.ImageSizeService;
 import hello.backend.image.service.ImageThemeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -21,6 +23,7 @@ public class ImageBgController {
 
     private final ImageBgService imageBgService;
     private final ImageThemeService imageThemeService;
+    private final ImageSizeService imageSizeService;
 
     @Operation(summary = "이미지 배경 제거", description = "상품의 배경을 제거합니다.")
     @ApiResponses(value = {
@@ -42,5 +45,15 @@ public class ImageBgController {
     public ResponseEntity<List<ThemeResponse>> getThemes() {
         List<ThemeResponse> themes = imageThemeService.getThemes();
         return new ResponseEntity<>(themes, HttpStatus.OK);
+    }
+
+    @Operation(summary = "이미지 사이즈 조회", description = "이미지의 사이즈를 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공")
+    })
+    @GetMapping("/sizes")
+    public ResponseEntity<List<SizeResponse>> getSizes() {
+        List<SizeResponse> sizes = imageSizeService.getImageSizes();
+        return new ResponseEntity<>(sizes, HttpStatus.OK);
     }
 }
