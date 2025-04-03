@@ -1,6 +1,7 @@
 package hello.backend.video.contoller;
 
 import com.google.gson.JsonObject;
+import hello.backend.ai.deepseek.service.DeepSeekService;
 import hello.backend.video.dto.*;
 import hello.backend.video.service.VideoService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class VideoController {
     private final VideoService videoService;
+    private final DeepSeekService deepSeekService;
 
     @Operation(summary = "text to video 생성", description = "텍스트를 기반으로 영상을 생성합니다.")
     @ApiResponses(value = {
@@ -24,7 +26,9 @@ public class VideoController {
     })
     @PostMapping("/text")
     public ResponseEntity<TextToVideoResponse> createTextToVideo(@RequestBody TextToVideoRequest request) {
-        JsonObject createTextToVideo = videoService.createTextToVideo(request);
+        String finalprompt = deepSeekService.textTransFormScript(request.getPrompt());
+        JsonObject createTextToVideo = videoService.createTextToVideo(request, finalprompt);
+
         TextToVideoResponse response = TextToVideoResponse.from(createTextToVideo,
                 request.getAspect_ratio(),
                 request.getDuration());
@@ -38,7 +42,9 @@ public class VideoController {
     })
     @PostMapping("/image")
     public ResponseEntity<ImageToVideoResponse> createImageToVideo(@RequestBody ImageToVideoRequest request) {
-        JsonObject createImageToVideo = videoService.createImageToVideo(request);
+        String finalprompt = deepSeekService.imageTransFormScript(request.getPrompt());
+        JsonObject createImageToVideo = videoService.createImageToVideo(request, finalprompt);
+
         ImageToVideoResponse response = ImageToVideoResponse.from(createImageToVideo,
                 request.getDuration()
         , request.getAspect_ratio());
@@ -60,5 +66,15 @@ public class VideoController {
         SaveResponse response = videoService.saveVideo(userId, request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @Operation(summary = "DeepSeek prompt 테스트", description = "prompt를 DeepSeek에 보내 변환된 결과를 확인합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "변환 성공")
+    })
+    @PostMapping("/transform")
+    public ResponseEntity<String> transformPrompt(@RequestBody String prompt) {
+        String result = deepSeekService.textTransFormScript(prompt);
+        return ResponseEntity.ok(result);
     }
 }

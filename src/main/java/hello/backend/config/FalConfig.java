@@ -1,4 +1,4 @@
-package hello.backend.video.domain;
+package hello.backend.config;
 
 import ai.fal.client.FalClient;
 import org.springframework.context.annotation.Bean;
