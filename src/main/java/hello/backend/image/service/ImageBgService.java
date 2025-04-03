@@ -3,14 +3,10 @@ package hello.backend.image.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import hello.backend.exception.BadRequestException;
-import hello.backend.exception.InvalidFileException;
 import hello.backend.exception.NotFoundException;
-import hello.backend.image.domain.AdImage;
+import hello.backend.image.domain.Image;
 import hello.backend.image.dto.BgRemoveResponse;
-import hello.backend.image.dto.ImageResponse;
-import hello.backend.image.repository.AdImageRepository;
-import hello.backend.user.domain.User;
-import hello.backend.user.repository.UserRepository;
+import hello.backend.image.repository.ImageRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,12 +16,10 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Base64;
 import java.util.List;
@@ -33,10 +27,9 @@ import java.util.List;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class AdImageService {
+public class ImageBgService {
 
-    private final AdImageRepository adImageRepository;
-    private final UserRepository userRepository;
+    private final ImageRepository imageRepository;
     private final FileStorageService fileStorageService;
     private final WebClient webClient;
 
@@ -46,60 +39,10 @@ public class AdImageService {
     @Value("${file.bgremove-dir}")
     private String bgRemoveDir;
 
-    // 이미지 업로드
-    @Transactional
-    public ImageResponse uploadImage(Long userId, MultipartFile image) throws IOException {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다."));
-
-        if (image.isEmpty()) {
-            throw new InvalidFileException("업로드된 파일이 비어 있습니다.");
-        }
-
-        String savedFilePath = fileStorageService.saveFile(image);
-
-        AdImage adImage = AdImage.builder()
-                .user(user)
-                .originalImage(savedFilePath)
-                .build();
-
-        AdImage savedImage = adImageRepository.save(adImage);
-
-        return toImageResponse(savedImage);
-    }
-
-    // 전체 이미지 조회
-    public List<ImageResponse> getAllImages() {
-        List<AdImage> images = adImageRepository.findAll();
-        return images.stream()
-                .map(this::toImageResponse)
-                .toList();
-    }
-
-    // 사용자 이미지 조회
-    public List<ImageResponse> getUserImages(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다."));
-
-        List<AdImage> images = adImageRepository
-                .findAllByUserId(user.getId());
-
-        return images.stream()
-                .map(this::toImageResponse)
-                .toList();
-    }
-
-    // 특정 이미지 조회
-    public ImageResponse getImage(Long imageId) {
-        AdImage image = adImageRepository.findById(imageId)
-                .orElseThrow(() -> new NotFoundException("이미지를 찾을 수 없습니다."));
-        return toImageResponse(image);
-    }
-
     // 이미지 배경 제거
     @Transactional
     public BgRemoveResponse removeBg(Long imageId) {
-        AdImage image = adImageRepository.findById(imageId)
+        Image image = imageRepository.findById(imageId)
                 .orElseThrow(() -> new NotFoundException("해당 이미지가 존재하지 않습니다."));
 
         String uploadImagePath = image.getOriginalImage();
@@ -131,7 +74,7 @@ public class AdImageService {
 
             fileStorageService.saveBgRemoveFile(imageBytes, outputImagePath);
             image.setProcessedImage(outputImagePath);
-            adImageRepository.save(image);
+            imageRepository.save(image);
 
             return toBgRemoveResponse(image);
         } catch (Exception e) {
@@ -140,20 +83,11 @@ public class AdImageService {
         }
     }
 
-    private BgRemoveResponse toBgRemoveResponse(AdImage image) {
+    private BgRemoveResponse toBgRemoveResponse(Image image) {
         return new BgRemoveResponse(
                 image.getId(),
                 image.getUser().getId(),
                 image.getProcessedImage()
         );
     }
-
-    private ImageResponse toImageResponse(AdImage adImage) {
-        return new ImageResponse(
-                adImage.getId(),
-                adImage.getUser().getId(),
-                adImage.getOriginalImage()
-        );
-    }
-
 }
