@@ -13,13 +13,4 @@ public enum ImageSize {
     private final int width;
     private final int height;
     private final String ratio;
-
-    public static ImageSize fromRatio(String ratio) {
-        for (ImageSize size : ImageSize.values()) {
-            if (size.getRatio().equals(ratio)) {
-                return size;
-            }
-        }
-        throw new IllegalArgumentException("값을 찾을 수 없습니다." + ratio);
-    }
 }
