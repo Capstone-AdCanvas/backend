@@ -1,8 +1,7 @@
 package hello.backend.image.controller;
 
-import hello.backend.image.dto.BgRemoveResponse;
-import hello.backend.image.dto.SizeResponse;
-import hello.backend.image.dto.ThemeResponse;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import hello.backend.image.dto.*;
 import hello.backend.image.service.ImageBgService;
 import hello.backend.image.service.ImageSizeService;
 import hello.backend.image.service.ImageThemeService;
@@ -32,7 +31,7 @@ public class ImageBgController {
             @ApiResponse(responseCode = "404", description = "이미지를 찾을 수 없음")
     })
     @PostMapping("/{imageId}/remove")
-    public ResponseEntity<BgRemoveResponse> removeBg(@PathVariable Long imageId) {
+    public ResponseEntity<BgRemoveResponse> removeBg(@PathVariable Long imageId) throws JsonProcessingException {
         BgRemoveResponse response = imageBgService.removeBg(imageId);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
@@ -55,5 +54,20 @@ public class ImageBgController {
     public ResponseEntity<List<SizeResponse>> getSizes() {
         List<SizeResponse> sizes = imageSizeService.getImageSizes();
         return new ResponseEntity<>(sizes, HttpStatus.OK);
+    }
+
+    @Operation(summary = "이미지 배경 생성", description = "상품의 배경을 생성합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "생성 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청 (응답 오류)"),
+            @ApiResponse(responseCode = "404", description = "이미지/테마/비율을 찾을 수 없음")
+    })
+    @PostMapping("/{imageId}/generate")
+    public ResponseEntity<List<BgGenerateResponse>> generateBg(
+            @PathVariable Long imageId,
+            @RequestBody BgGenerateRequest request
+    ) throws JsonProcessingException {
+        List<BgGenerateResponse> response = imageBgService.generateBg(imageId, request);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 }
