@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import hello.backend.exception.BadRequestException;
+import hello.backend.exception.InvalidFileException;
 import hello.backend.exception.NotFoundException;
 import hello.backend.image.domain.Image;
 import hello.backend.image.domain.enums.ImageSize;
@@ -26,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 @Slf4j
@@ -118,7 +120,7 @@ public class ImageBgService {
 
         ObjectMapper objectMapper = new ObjectMapper();
         Map<String, Object> conceptOptionMap = new HashMap<>();
-        conceptOptionMap.put("theme_template", theme);
+        conceptOptionMap.put("theme_template", theme.name().toLowerCase());
         conceptOptionMap.put("product_size", "auto");
         conceptOptionMap.put("num_results", 4);
         String conceptOptionJson = objectMapper.writeValueAsString(conceptOptionMap);
@@ -248,6 +250,36 @@ public class ImageBgService {
             }
         }
         return responseList;
+    }
+
+    @Transactional
+    public FinalImageResponse selectFinalImage(Long imageId, FinalImageRequest request) {
+        Image image = imageRepository.findById(imageId)
+                .orElseThrow(() -> new NotFoundException("해당 이미지가 존재하지 않습니다."));
+
+        File tempFile = new File(tempDir, request.getFileName());
+
+        if (!tempFile.exists()) {
+            throw new NotFoundException("파일을 찾을 수 없습니다: " + tempFile.getAbsolutePath());
+        }
+
+        String fileName = "final_" + imageId + ".png";
+        File finalFile = new File(finalDir, fileName);
+
+        try {
+            Files.createDirectories(finalFile.getParentFile().toPath());
+            Files.copy(tempFile.toPath(), finalFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            log.info("파일 이동 완료: {} -> {}", tempFile.getAbsolutePath(), finalFile.getAbsolutePath());
+
+            fileStorageService.cleanUpTempDir();
+        } catch (IOException e) {
+            log.error("파일 이동 실패", e);
+            throw new InvalidFileException("파일을 이동할 수 없습니다.");
+        }
+
+        image.setFinalImage(finalFile.getAbsolutePath());
+        imageRepository.save(image);
+        return new FinalImageResponse(image.getId(), image.getFinalImage());
     }
 
     private BgRemoveResponse toBgRemoveResponse(Image image) {
