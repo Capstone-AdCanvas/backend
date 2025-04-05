@@ -32,7 +32,7 @@ public class Image {
 
     private String processedImage;
 
-    private String tempImage;
+    private String finalImage;
 
     @CreatedDate
     @Column(nullable = false, updatable = false)
