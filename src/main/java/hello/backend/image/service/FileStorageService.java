@@ -3,6 +3,7 @@ package hello.backend.image.service;
 import hello.backend.exception.InvalidFileException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -16,6 +17,7 @@ import java.util.Base64;
 import java.util.Set;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FileStorageService {
@@ -82,6 +84,27 @@ public class FileStorageService {
         File directory = new File(directoryPath);
         if (!directory.exists() && !directory.mkdirs()) {
             throw new InvalidFileException("디렉토리를 생성할 수 없습니다: " + directoryPath);
+        }
+    }
+
+    public void cleanUpTempDir() {
+        File tempDirectory = new File(tempDir);
+        File[] files = tempDirectory.listFiles();
+
+        if (files == null) {
+            log.warn("tempDir 경로가 잘못되었거나 접근 불가: {}", tempDir);
+            return;
+        }
+
+        for (File file : files) {
+            if (file.isFile()) {
+                boolean deleted = file.delete();
+                if (deleted) {
+                    log.info("임시 파일 삭제 완료: {}", file.getAbsolutePath());
+                } else {
+                    log.warn("임시 파일 삭제 실패: {}", file.getAbsolutePath());
+                }
+            }
         }
     }
 
