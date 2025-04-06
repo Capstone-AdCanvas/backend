@@ -24,10 +24,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 @Slf4j
@@ -58,7 +55,7 @@ public class ImageBgService {
                 .orElseThrow(() -> new NotFoundException("해당 이미지가 존재하지 않습니다."));
 
         String uploadImagePath = image.getOriginalImage();
-        String outputImagePath = Paths.get(bgRemoveDir, "processed_" + image.getId() + ".png").toString();
+        String outputImagePath = Paths.get(bgRemoveDir, String.format("processed_%d.png", image.getId())).toString();
 
         Map<String, Object> conceptOptionMap = new HashMap<>();
         conceptOptionMap.put("product_size", "auto");
@@ -143,39 +140,7 @@ public class ImageBgService {
                 .bodyToMono(String.class)
                 .block();
 
-        if (jsonResponse == null || jsonResponse.isEmpty()) {
-            log.error("API 응답이 비어 있음");
-            throw new BadRequestException("배경 생성 API 응답이 비어 있습니다.");
-        }
-
-        List<String> base64List;
-
-        try {
-            base64List = objectMapper.readValue(jsonResponse, new TypeReference<List<String>>() {});
-            log.info("JSON 배열로 파싱된 Base64 리스트 크기: {}", base64List.size());
-        } catch (Exception e) {
-            log.error("JSON 파싱 실패: 응답이 예상한 포맷이 아님", e);
-            throw new BadRequestException("배경 생성 응답을 처리할 수 없습니다.");
-        }
-
-        if (base64List.isEmpty()) {
-            log.error("배경 생성 응답이 비어있습니다.");
-            throw new BadRequestException("배경 생성 응답이 비어있습니다.");
-        }
-
-        List<BgGenerateResponse> responseList = new ArrayList<>();
-
-        for (int i = 0; i < base64List.size(); i++) {
-            String base64 = base64List.get(i);
-            try {
-                String outputImagePath = fileStorageService.saveBase64Image(base64);
-                responseList.add(new BgGenerateResponse(outputImagePath));
-            } catch (IllegalArgumentException e) {
-                log.error("Base64 디코딩 실패: index={} data={}", i, base64, e);
-                throw new BadRequestException("배경 생성 응답 데이터가 올바르지 않습니다.");
-            }
-        }
-        return responseList;
+        return handleBgGenerateResponse(jsonResponse);
     }
 
     // 배경 생성 (커스텀)
@@ -217,11 +182,37 @@ public class ImageBgService {
                 .bodyToMono(String.class)
                 .block();
 
+        return handleBgGenerateResponse(jsonResponse);
+    }
+
+    // 최종 이미지 선택
+    @Transactional
+    public FinalImageResponse selectFinalImage(Long imageId, FinalImageRequest request) {
+        Image image = imageRepository.findById(imageId)
+                .orElseThrow(() -> new NotFoundException("해당 이미지가 존재하지 않습니다."));
+
+        File tempFile = new File(tempDir, request.getFileName());
+        String fileName = "final_" + imageId + ".png";
+        File finalFile = new File(finalDir, fileName);
+
+        fileStorageService.moveFile(tempFile, finalFile);
+        log.info("파일 이동 완료: {} -> {}", tempFile.getAbsolutePath(), finalFile.getAbsolutePath());
+        fileStorageService.cleanUpTempDir();
+
+        image.setFinalImage(finalFile.getAbsolutePath());
+        imageRepository.save(image);
+        return new FinalImageResponse(image.getId(), image.getFinalImage());
+    }
+
+    // 생성된 이미지 저장
+    @Transactional
+    public List<BgGenerateResponse> handleBgGenerateResponse(String jsonResponse) {
         if (jsonResponse == null || jsonResponse.isEmpty()) {
             log.error("API 응답이 비어 있음");
             throw new BadRequestException("배경 생성 API 응답이 비어 있습니다.");
         }
 
+        ObjectMapper objectMapper = new ObjectMapper();
         List<String> base64List;
 
         try {
@@ -250,36 +241,6 @@ public class ImageBgService {
             }
         }
         return responseList;
-    }
-
-    @Transactional
-    public FinalImageResponse selectFinalImage(Long imageId, FinalImageRequest request) {
-        Image image = imageRepository.findById(imageId)
-                .orElseThrow(() -> new NotFoundException("해당 이미지가 존재하지 않습니다."));
-
-        File tempFile = new File(tempDir, request.getFileName());
-
-        if (!tempFile.exists()) {
-            throw new NotFoundException("파일을 찾을 수 없습니다: " + tempFile.getAbsolutePath());
-        }
-
-        String fileName = "final_" + imageId + ".png";
-        File finalFile = new File(finalDir, fileName);
-
-        try {
-            Files.createDirectories(finalFile.getParentFile().toPath());
-            Files.copy(tempFile.toPath(), finalFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            log.info("파일 이동 완료: {} -> {}", tempFile.getAbsolutePath(), finalFile.getAbsolutePath());
-
-            fileStorageService.cleanUpTempDir();
-        } catch (IOException e) {
-            log.error("파일 이동 실패", e);
-            throw new InvalidFileException("파일을 이동할 수 없습니다.");
-        }
-
-        image.setFinalImage(finalFile.getAbsolutePath());
-        imageRepository.save(image);
-        return new FinalImageResponse(image.getId(), image.getFinalImage());
     }
 
     private BgRemoveResponse toBgRemoveResponse(Image image) {
