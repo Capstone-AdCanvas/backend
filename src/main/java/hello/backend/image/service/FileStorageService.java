@@ -3,19 +3,21 @@ package hello.backend.image.service;
 import hello.backend.error.exception.user.InvalidFileException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import reactor.core.publisher.Mono;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Base64;
 import java.util.Set;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FileStorageService {
@@ -55,11 +57,30 @@ public class FileStorageService {
     @Transactional
     public void saveBgRemoveFile(byte[] imageBytes, String filePath) {
         try {
-            Path path = Paths.get(filePath);
-            Files.createDirectories(path.getParent());
+            ensureDirectoryExists(Paths.get(filePath).getParent().toString());
             Files.write(Paths.get(filePath), imageBytes);
         } catch (IOException e) {
             throw new InvalidFileException("파일 저장 중 오류가 발생했습니다.");
+        }
+    }
+
+    // 파일 이동 (복사 후 원본 삭제)
+    @Transactional
+    public void moveFile(File source, File target) {
+        if (!source.exists()) {
+            throw new InvalidFileException("원본 파일이 존재하지 않습니다: " + source.getAbsolutePath());
+        }
+
+        try {
+            ensureDirectoryExists(target.getParentFile().getAbsolutePath());
+            Files.copy(source.toPath(), target.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+
+            boolean deleted = source.delete();
+            if (!deleted) {
+                log.warn("원본 파일 삭제 실패: {}", source.getAbsolutePath());
+            }
+        } catch (IOException e) {
+            throw new InvalidFileException("파일 이동 중 오류가 발생했습니다.");
         }
     }
 
@@ -82,6 +103,27 @@ public class FileStorageService {
         File directory = new File(directoryPath);
         if (!directory.exists() && !directory.mkdirs()) {
             throw new InvalidFileException("디렉토리를 생성할 수 없습니다: " + directoryPath);
+        }
+    }
+
+    public void cleanUpTempDir() {
+        File tempDirectory = new File(tempDir);
+        File[] files = tempDirectory.listFiles();
+
+        if (files == null) {
+            log.warn("tempDir 경로가 잘못되었거나 접근 불가: {}", tempDir);
+            return;
+        }
+
+        for (File file : files) {
+            if (file.isFile()) {
+                boolean deleted = file.delete();
+                if (deleted) {
+                    log.info("임시 파일 삭제 완료: {}", file.getAbsolutePath());
+                } else {
+                    log.warn("임시 파일 삭제 실패: {}", file.getAbsolutePath());
+                }
+            }
         }
     }
 

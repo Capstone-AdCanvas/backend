@@ -70,4 +70,33 @@ public class ImageBgController {
         List<BgGenerateResponse> response = imageBgService.generateBg(imageId, request);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
+
+    @Operation(summary = "이미지 배경 커스텀 생성", description = "상품의 배경을 커스텀하여 생성합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "생성 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청 (응답 오류)"),
+            @ApiResponse(responseCode = "404", description = "비율을 찾을 수 없음")
+    })
+    @PostMapping("/{imageId}/custom-generate")
+    public ResponseEntity<List<BgGenerateResponse>> generateCustomBg(
+            @PathVariable Long imageId,
+            @RequestBody BgCustomGenerateRequest request
+    ) throws JsonProcessingException {
+        List<BgGenerateResponse> response = imageBgService.generateCustomBg(imageId, request);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @Operation(summary = "최종 이미지 선택", description = "생성한 이미지 중 사용할 이미지의 최종 선택을 합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "저장 성공"),
+            @ApiResponse(responseCode = "400", description = "파일 이동 오류"),
+    })
+    @PostMapping("/{imageId}/select-finalImage")
+    public ResponseEntity<FinalImageResponse> selectFinalImage(
+            @PathVariable Long imageId,
+            @RequestBody FinalImageRequest request
+    ){
+        FinalImageResponse response = imageBgService.selectFinalImage(imageId, request);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
 }
