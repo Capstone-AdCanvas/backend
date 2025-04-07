@@ -3,6 +3,8 @@ package hello.backend.image.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import hello.backend.error.exception.user.BadRequestException;
+import hello.backend.error.exception.user.NotFoundException;
 import hello.backend.exception.BadRequestException;
 import hello.backend.exception.InvalidFileException;
 import hello.backend.exception.NotFoundException;
