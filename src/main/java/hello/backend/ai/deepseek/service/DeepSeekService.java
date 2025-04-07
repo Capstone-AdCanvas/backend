@@ -25,15 +25,13 @@ public class DeepSeekService {
     // text prompt
     public String textTransFormScript(String userScript) {
         String prompt = """
-            Convert the following sentence into a short, natural scenario suitable for an advertising video scene.
-                - The main theme is "<Insert your main keyword here>".
-                - The product must remain stationary and must not move.
-                - The product must always remain sharply in focus, clearly visible, and be the primary visual element of the scene.
-                - Natural elements should remain complementary and subtle, enhancing but never distracting from the clearly-focused product.
-                - Keep it concise and poetic, within approximately 3 sentences, and realistic enough to film directly.
-                - Provide your response entirely in English.
+            You are an advertising video creator. Turn the following sentence into a 15–20 second video ad scenario.
+            Divide it into 3–5 realistic, emotionally resonant scenes with a clear visual flow.
+            Do not include any text elements like subtitles or narration.
+            Keep the scenes natural, filmable, and focused on real-life visuals only.
+            Describe each shot in English with no poetic or abstract expressions.
             The sentence I want you to convert is:
-            """ + userScript;
+        """ + userScript;
 
         Map<String, Object> requestBody = Map.of(
                 "model", model,
