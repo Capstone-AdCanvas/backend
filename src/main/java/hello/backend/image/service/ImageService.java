@@ -1,7 +1,7 @@
 package hello.backend.image.service;
 
-import hello.backend.exception.InvalidFileException;
-import hello.backend.exception.NotFoundException;
+import hello.backend.error.exception.user.InvalidFileException;
+import hello.backend.error.exception.user.NotFoundException;
 import hello.backend.image.domain.Image;
 import hello.backend.image.dto.ImageResponse;
 import hello.backend.image.repository.ImageRepository;
