@@ -9,12 +9,13 @@ import java.time.LocalDateTime;
 @Getter
 @AllArgsConstructor
 public class TextToVideoResponse {
+    private Long id;
     private String videoUrl;
     private String aspect_ratio;
     private String duration;
     private LocalDateTime createdAt;
 
-    public static TextToVideoResponse from(JsonObject result, String aspectRatio, String duration) {
+    public static TextToVideoResponse from(Long id, JsonObject result, String aspectRatio, String duration) {
         if (result == null || !result.has("video")) {
             throw new IllegalStateException("Fal 응답에 video 필드 없음: " + result);
         }
@@ -26,6 +27,7 @@ public class TextToVideoResponse {
         }
 
         return new TextToVideoResponse(
+                id,
                 videoObj.get("url").getAsString(),
                 aspectRatio,
                 duration,
