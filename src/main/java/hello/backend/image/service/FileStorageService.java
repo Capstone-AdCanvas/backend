@@ -1,6 +1,6 @@
 package hello.backend.image.service;
 
-import hello.backend.exception.InvalidFileException;
+import hello.backend.error.exception.user.InvalidFileException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

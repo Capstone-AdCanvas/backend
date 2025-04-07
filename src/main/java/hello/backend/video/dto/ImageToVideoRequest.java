@@ -8,5 +8,5 @@ public class ImageToVideoRequest {
     private String imageUrl;
     private String prompt;
     private String aspect_ratio;
-    private Integer duration;
+    private String duration;
 }
