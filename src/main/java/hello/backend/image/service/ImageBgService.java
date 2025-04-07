@@ -3,8 +3,8 @@ package hello.backend.image.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import hello.backend.exception.BadRequestException;
-import hello.backend.exception.NotFoundException;
+import hello.backend.error.exception.user.BadRequestException;
+import hello.backend.error.exception.user.NotFoundException;
 import hello.backend.image.domain.Image;
 import hello.backend.image.domain.enums.ImageSize;
 import hello.backend.image.domain.enums.ImageTheme;
@@ -25,7 +25,6 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.File;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.*;
 
