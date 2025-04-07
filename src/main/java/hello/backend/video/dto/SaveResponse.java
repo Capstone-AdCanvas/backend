@@ -1,12 +1,13 @@
 package hello.backend.video.dto;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
 
 import java.time.LocalDateTime;
 
-@Getter @Setter
+@Getter
+@Builder
 @AllArgsConstructor
 public class SaveResponse {
     private Long userId;
