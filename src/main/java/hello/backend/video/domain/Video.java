@@ -40,7 +40,7 @@ public class Video {
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createAt;
+    private LocalDateTime createdAt;
 
 
     @Builder
@@ -51,6 +51,6 @@ public class Video {
         this.finalVideo = finalVideo;
         this.aspectRatio = aspectRatio;
         this.duration = duration;
-        this.createAt = createAt;
+        this.createdAt = createAt;
     }
 }

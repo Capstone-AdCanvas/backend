@@ -5,17 +5,17 @@ import ai.fal.client.Output;
 import ai.fal.client.SubscribeOptions;
 import ai.fal.client.queue.QueueStatus;
 import com.google.gson.JsonObject;
+import hello.backend.ai.deepseek.service.DeepSeekService;
 import hello.backend.user.domain.User;
 import hello.backend.user.repository.UserRepository;
 import hello.backend.video.domain.Video;
-import hello.backend.video.dto.ImageToVideoRequest;
-import hello.backend.video.dto.SaveResponse;
-import hello.backend.video.dto.TextToVideoRequest;
-import hello.backend.video.dto.SaveRequest;
+import hello.backend.video.dto.*;
 import hello.backend.video.repository.VideoRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 import java.util.Map;
 
 @Service
@@ -25,11 +25,15 @@ public class VideoService {
     private final VideoRepository videoRepository;
     private final UserRepository userRepository;
     private final FalClient falClient;
+    private final DeepSeekService deepSeekService;
+    private final VideoService videoService;
 
 
     //text-to-video 생성
     @Transactional
-    public JsonObject createTextToVideo(TextToVideoRequest request, String finalprompt) {
+    public JsonObject createTextToVideo(TextToVideoRequest request) {
+
+        String finalprompt = deepSeekService.textTransFormScript(request.getPrompt());
 
         Map<String, Object> input = Map.of(
                 "prompt", finalprompt,
@@ -55,16 +59,18 @@ public class VideoService {
         return result;
     }
 
-    //image-to-video 생성
+    //image-to-video(kling 모델) 생성
     @Transactional
-    public JsonObject createImageToVideo(ImageToVideoRequest request, String finalprompt) {
+    public ImageToVideoResponse createImageToVideo(ImageToVideoRequest request) {
+        String finalprompt = deepSeekService.textTransFormScript(request.getPrompt());
 
         Map<String, Object> input = Map.of(
-                "image_url", request.getImageUrl(),
                 "prompt", finalprompt,
-                "resolution", "1080p",
+                "image_url", request.getImageUrl(),
+                "duration", request.getDuration(),
                 "aspect_ratio", request.getAspect_ratio(),
-                "duration", request.getDuration()
+                "negative_prompt", "blur, distort, and low quality",
+                "cfg_scale", 0.5
         );
 
         SubscribeOptions<JsonObject> options = SubscribeOptions.<JsonObject>builder()
@@ -78,11 +84,17 @@ public class VideoService {
                 })
                 .build();
 
-        Output<JsonObject> output = falClient.subscribe("fal-ai/pika/v2.1/image-to-video", options);
+        Output<JsonObject> output = falClient.subscribe("fal-ai/kling-video/v1.6/pro/image-to-video", options);
 
         JsonObject result = output.getData();
+        String videoUrl = videoService.extractVideoUrl(result);
 
-        return result;
+        return ImageToVideoResponse.builder()
+                .videoUrl(videoUrl)
+                .duration(request.getDuration())
+                .aspect_ratio(request.getAspect_ratio())
+                .createdAt(LocalDateTime.now())
+                .build();
     }
 
     //video 저장
@@ -102,13 +114,30 @@ public class VideoService {
 
         videoRepository.save(video);
 
-        return new SaveResponse(
-                user.getId(),
-                request.getName(),
-                request.getVideoUrl(),
-                request.getAspectRatio(),
-                request.getDuration(),
-                request.getCreatedAt()
-        );
+        return SaveResponse.builder()
+                .userId(userId)
+                .name(request.getName())
+                .videoUrl(request.getVideoUrl())
+                .aspectRatio(request.getAspectRatio())
+                .duration(request.getDuration())
+                .createdAt(request.getCreatedAt())
+                .build();
     }
+
+    //예외처리
+    @Transactional
+    public String extractVideoUrl(JsonObject result) {
+        if (result == null || !result.has("video")) {
+            throw new IllegalStateException("Fal 응답에 video 필드 없음: " + result);
+        }
+
+        JsonObject videoObj = result.getAsJsonObject("video");
+
+        if (!videoObj.has("url")) {
+            throw new IllegalStateException("Fal 응답의 video 객체에 url 없음: " + result);
+        }
+
+        return videoObj.get("url").getAsString();
+    }
+
 }
