@@ -13,6 +13,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+
 @RestController
 @RequestMapping("/api/v1/videos")
 @RequiredArgsConstructor
@@ -26,30 +28,26 @@ public class VideoController {
     })
     @PostMapping("/text")
     public ResponseEntity<TextToVideoResponse> createTextToVideo(@RequestBody TextToVideoRequest request) {
-        String finalprompt = deepSeekService.textTransFormScript(request.getPrompt());
-        JsonObject createTextToVideo = videoService.createTextToVideo(request, finalprompt);
+        JsonObject createTextToVideo = videoService.createTextToVideo(request);
 
-        TextToVideoResponse response = TextToVideoResponse.from(createTextToVideo,
+        TextToVideoResponse response = TextToVideoResponse.from(
+                null,
+                createTextToVideo,
                 request.getAspect_ratio(),
                 request.getDuration());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @Operation(summary = "image to video 생성", description = "이미지를 기반으로 영상을 생성합니다.")
+    @Operation(summary = "image to video 생성(Kling-pro-v1.6 모델)", description = "이미지를 기반으로 영상을 생성합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "영상 생성 성공")
     })
-    @PostMapping("/image")
-    public ResponseEntity<ImageToVideoResponse> createImageToVideo(@RequestBody ImageToVideoRequest request) {
-        String finalprompt = deepSeekService.imageTransFormScript(request.getPrompt());
-        JsonObject createImageToVideo = videoService.createImageToVideo(request, finalprompt);
+    @PostMapping("/images/Kling-pro")
+    public ResponseEntity<ImageToVideoResponse> createImageToVideoKling(@RequestBody ImageToVideoRequest request) {
+        ImageToVideoResponse createImageToVideo = videoService.createImageToVideo(request);
 
-        ImageToVideoResponse response = ImageToVideoResponse.from(createImageToVideo,
-                request.getDuration()
-        , request.getAspect_ratio());
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createImageToVideo);
     }
 
     @Operation(summary = "비디오 저장", description = "생성된 비디오를 저장합니다.")
