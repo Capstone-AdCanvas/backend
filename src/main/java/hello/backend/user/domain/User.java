@@ -1,5 +1,6 @@
 package hello.backend.user.domain;
 
+import hello.backend.user.dto.UserUpdateRequest;
 import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
@@ -44,5 +45,11 @@ public class User {
         this.name = name;
         this.email = email;
         this.password = password;
+    }
+
+    public void update(UserUpdateRequest dto) {
+        this.name = dto.getName();
+        this.email = dto.getEmail();
+        this.password = dto.getPassword();
     }
 }

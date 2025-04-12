@@ -54,7 +54,7 @@ public class UserController {
     @Operation(summary = "회원 전체조회", description = "회원을 전체조회합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "회원 전체조회 성공"),
-            @ApiResponse(responseCode = "404", description = "잘못된 요청: 회원을 찾을 수 없음")
+            @ApiResponse(responseCode = "404", description = "잘못된 요청: 조회할 사용자가 없음.")
     })
     @GetMapping()
     public ResponseEntity<List<User>> getAllUser() {
@@ -69,12 +69,7 @@ public class UserController {
     })
     @PutMapping()
     public ResponseEntity<User> updateUser(@RequestBody UserUpdateRequest request) {
-        User user = userService.updateUser(
-                request.getId(),
-                request.getName(),
-                request.getEmail(),
-                request.getPassword()
-        );
+        User user = userService.updateUser(request);
 
         return new ResponseEntity<>(user, HttpStatus.OK);
     }
