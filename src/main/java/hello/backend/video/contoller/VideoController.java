@@ -21,7 +21,11 @@ public class VideoController {
 
     @Operation(summary = "text to video 생성(Kling-pro-v1.6 모델)", description = "텍스트를 기반으로 영상을 생성합니다.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "영상 생성 성공")
+            @ApiResponse(responseCode = "201", description = "영상 생성 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 입력값입니다."),
+            @ApiResponse(responseCode = "422", description = "정책 위반 콘텐츠입니다."),
+            @ApiResponse(responseCode = "504", description = "영상 생성 타임아웃입니다."),
+            @ApiResponse(responseCode = "500", description = "서버 내부 오류입니다.")
     })
     @PostMapping("/texts/Kling-pro")
     public ResponseEntity<TextToVideoResponse> createTextToVideoKling(@RequestBody TextToVideoRequest request) {
@@ -32,7 +36,11 @@ public class VideoController {
 
     @Operation(summary = "image to video 생성(Kling-pro-v1.6 모델)", description = "이미지를 기반으로 영상을 생성합니다.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "영상 생성 성공")
+            @ApiResponse(responseCode = "201", description = "영상 생성 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 입력값입니다."),
+            @ApiResponse(responseCode = "422", description = "정책 위반 콘텐츠입니다."),
+            @ApiResponse(responseCode = "504", description = "영상 생성 타임아웃입니다."),
+            @ApiResponse(responseCode = "500", description = "서버 내부 오류입니다.")
     })
     @PostMapping("/images/Kling-pro")
     public ResponseEntity<ImageToVideoResponse> createImageToVideoKling(@RequestBody ImageToVideoRequest request) {
