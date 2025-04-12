@@ -1,6 +1,5 @@
-package hello.backend;
+package hello.backend.error;
 
-import hello.backend.error.ErrorResponse;
 import hello.backend.error.exception.BusinessException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
