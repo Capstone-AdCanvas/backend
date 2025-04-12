@@ -1,6 +1,5 @@
 package hello.backend.video.contoller;
 
-import com.google.gson.JsonObject;
 import hello.backend.ai.deepseek.service.DeepSeekService;
 import hello.backend.video.dto.*;
 import hello.backend.video.service.VideoService;
@@ -13,8 +12,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
-
 @RestController
 @RequestMapping("/api/v1/videos")
 @RequiredArgsConstructor
@@ -22,21 +19,15 @@ public class VideoController {
     private final VideoService videoService;
     private final DeepSeekService deepSeekService;
 
-    @Operation(summary = "text to video 생성", description = "텍스트를 기반으로 영상을 생성합니다.")
+    @Operation(summary = "text to video 생성(Kling-pro-v1.6 모델)", description = "텍스트를 기반으로 영상을 생성합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "영상 생성 성공")
     })
-    @PostMapping("/text")
-    public ResponseEntity<TextToVideoResponse> createTextToVideo(@RequestBody TextToVideoRequest request) {
-        JsonObject createTextToVideo = videoService.createTextToVideo(request);
+    @PostMapping("/texts/Kling-pro")
+    public ResponseEntity<TextToVideoResponse> createTextToVideoKling(@RequestBody TextToVideoRequest request) {
+        TextToVideoResponse createTextToVideo = videoService.createTextToVideo(request);
 
-        TextToVideoResponse response = TextToVideoResponse.from(
-                null,
-                createTextToVideo,
-                request.getAspect_ratio(),
-                request.getDuration());
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createTextToVideo);
     }
 
     @Operation(summary = "image to video 생성(Kling-pro-v1.6 모델)", description = "이미지를 기반으로 영상을 생성합니다.")
@@ -66,13 +57,23 @@ public class VideoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @Operation(summary = "DeepSeek prompt 테스트", description = "prompt를 DeepSeek에 보내 변환된 결과를 확인합니다.")
+    @Operation(summary = "DeepSeek prompt 테스트(text)", description = "prompt를 DeepSeek에 보내 변환된 결과를 확인합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "변환 성공")
     })
-    @PostMapping("/transform")
-    public ResponseEntity<String> transformPrompt(@RequestBody String prompt) {
+    @PostMapping("/transforms/Text")
+    public ResponseEntity<String> textTransFormScript(@RequestBody String prompt) {
         String result = deepSeekService.textTransFormScript(prompt);
+        return ResponseEntity.ok(result);
+    }
+
+    @Operation(summary = "DeepSeek prompt 테스트(image)", description = "prompt를 DeepSeek에 보내 변환된 결과를 확인합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "변환 성공")
+    })
+    @PostMapping("/transforms/Image")
+    public ResponseEntity<String> imagetransformPrompt(@RequestBody String prompt) {
+        String result = deepSeekService.imageTransFormScript(prompt);
         return ResponseEntity.ok(result);
     }
 }

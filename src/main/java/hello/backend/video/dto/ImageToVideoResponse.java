@@ -10,7 +10,6 @@ import java.time.LocalDateTime;
 @Builder
 @AllArgsConstructor
 public class ImageToVideoResponse {
-    private Long id;
     private String videoUrl;
     private String duration;
     private String aspect_ratio;
