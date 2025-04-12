@@ -16,6 +16,8 @@ services:
       - DRAPH_ART_URL=${DRAPH_ART_URL}
       - DRAPH_ART_TOKEN=${DRAPH_ART_TOKEN}
       - DRAPH_ART_USERNAME=${DRAPH_ART_USERNAME}
+      - FILE_FINAL_DIR=${FILE_FINAL_DIR}
+      - SPRING_WEBCLIENT_TIMEOUT=60000
     depends_on:
       db:
         condition: service_healthy
