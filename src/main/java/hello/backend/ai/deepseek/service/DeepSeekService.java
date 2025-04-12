@@ -25,12 +25,12 @@ public class DeepSeekService {
     // text prompt
     public String textTransFormScript(String userScript) {
         String prompt = """
-            You are an advertising video creator. Turn the following sentence into a 15–20 second video ad scenario.
-            Divide it into 3–5 realistic, emotionally resonant scenes with a clear visual flow.
-            Do not include any text elements like subtitles or narration.
-            Keep the scenes natural, filmable, and focused on real-life visuals only.
-            Describe each shot in English with no poetic or abstract expressions.
-            The sentence I want you to convert is:
+            You are a public awareness video creator. Based on the sentence below, create a 10-second video scenario. \s
+            The video must consist of **2 distinct scenes**, each lasting about **5 seconds**, flowing naturally from one to the next. \s
+            Each scene should be realistic, filmable, and focused on visually clear transitions — no text, narration, or subtitles. \s
+            Avoid poetic or abstract descriptions. Focus on grounded, everyday visuals that can be captured in a real-world setting. \s
+            Describe each scene clearly in **English**, with simple, specific details. \s
+            The user-submitted sentence is:
         """ + userScript;
 
         Map<String, Object> requestBody = Map.of(
