@@ -4,8 +4,6 @@ import hello.backend.error.ErrorCode;
 import hello.backend.error.ErrorResponse;
 import hello.backend.error.exception.BusinessException;
 import hello.backend.user.domain.User;
-import hello.backend.error.exception.user.BadRequestException;
-import hello.backend.error.exception.user.NotFoundException;
 import hello.backend.user.dto.UserUpdateRequest;
 import hello.backend.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
