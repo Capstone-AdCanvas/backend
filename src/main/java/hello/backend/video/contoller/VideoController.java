@@ -1,5 +1,6 @@
 package hello.backend.video.contoller;
 
+import ai.fal.client.queue.QueueStatus;
 import hello.backend.ai.deepseek.service.DeepSeekService;
 import hello.backend.video.dto.*;
 import hello.backend.video.service.VideoService;
@@ -28,10 +29,14 @@ public class VideoController {
             @ApiResponse(responseCode = "500", description = "서버 내부 오류입니다.")
     })
     @PostMapping("/texts/Kling-pro")
-    public ResponseEntity<TextToVideoResponse> createTextToVideoKling(@RequestBody TextToVideoRequest request) {
-        TextToVideoResponse createTextToVideo = videoService.createTextToVideo(request);
+    public ResponseEntity<SubmitQueueResponse> createTextToVideo(@RequestBody TextToVideoRequest request) {
+        QueueStatus.InQueue inQueue = videoService.createTextToVideo(request);
+        SubmitQueueResponse response = new SubmitQueueResponse(
+                inQueue.getRequestId(),
+                "요청이 큐에 등록되었습니다."
+        );
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(createTextToVideo);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @Operation(summary = "image to video 생성(Kling-pro-v1.6 모델)", description = "이미지를 기반으로 영상을 생성합니다.")
@@ -43,12 +48,44 @@ public class VideoController {
             @ApiResponse(responseCode = "500", description = "서버 내부 오류입니다.")
     })
     @PostMapping("/images/Kling-pro")
-    public ResponseEntity<ImageToVideoResponse> createImageToVideoKling(@RequestBody ImageToVideoRequest request) {
-        ImageToVideoResponse createImageToVideo = videoService.createImageToVideo(request);
+    public ResponseEntity<SubmitQueueResponse> createImageToVideo(@RequestBody ImageToVideoRequest request) {
+        QueueStatus.InQueue inQueue = videoService.createImageToVideo(request);
+        SubmitQueueResponse response = new SubmitQueueResponse(
+                inQueue.getRequestId(),
+                "요청이 큐에 등록되었습니다."
+        );
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(createImageToVideo);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+    //--------------------------------------------------------------------------------------------------
+    @Operation(summary = "생성중인 비디오 조회(polling)", description = "생성중인 비디오를 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "비디오 조회 성공"),
+            @ApiResponse(responseCode = "404", description = "잘못된 요청: 아직 생성중입니다.")
+    })
+    @GetMapping("/texts/{requestId}")
+    public ResponseEntity<TextToVideoResponse> getTextToVideo(
+            @Parameter(description = "조회할 비디오의 ID", required = true)
+            @PathVariable String requestId) {
+        TextToVideoResponse response = videoService.getTextToVideo(requestId);
+
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
+    @Operation(summary = "생성중인 비디오 조회(polling)", description = "생성중인 비디오를 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "비디오 조회 성공"),
+            @ApiResponse(responseCode = "404", description = "잘못된 요청: 아직 생성중입니다.")
+    })
+    @GetMapping("/images/{requestId}")
+    public ResponseEntity<ImageToVideoResponse> getImageToVideo(
+            @Parameter(description = "조회할 비디오의 ID", required = true)
+            @PathVariable String requestId) {
+        ImageToVideoResponse response = videoService.getImeageToVideo(requestId);
+
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+    //--------------------------------------------------------------------------------------------------
     @Operation(summary = "비디오 저장", description = "생성된 비디오를 저장합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "비디오 저장 성공"),
@@ -59,12 +96,11 @@ public class VideoController {
             @Parameter(description = "저장할 회원의 ID", required = true)
             @PathVariable Long userId,
             @RequestBody SaveRequest request) {
-
         SaveResponse response = videoService.saveVideo(userId, request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
-
+    //--------------------------------------------------------------------------------------------------
     @Operation(summary = "DeepSeek prompt 테스트(text)", description = "prompt를 DeepSeek에 보내 변환된 결과를 확인합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "변환 성공")
@@ -72,6 +108,7 @@ public class VideoController {
     @PostMapping("/transforms/Text")
     public ResponseEntity<String> textTransFormScript(@RequestBody String prompt) {
         String result = deepSeekService.textTransFormScript(prompt);
+
         return ResponseEntity.ok(result);
     }
 
@@ -82,6 +119,7 @@ public class VideoController {
     @PostMapping("/transforms/Image")
     public ResponseEntity<String> imagetransformPrompt(@RequestBody String prompt) {
         String result = deepSeekService.imageTransFormScript(prompt);
+
         return ResponseEntity.ok(result);
     }
 }
