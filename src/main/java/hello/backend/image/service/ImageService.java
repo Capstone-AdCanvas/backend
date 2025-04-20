@@ -1,7 +1,7 @@
 package hello.backend.image.service;
 
-import hello.backend.error.exception.user.InvalidFileException;
-import hello.backend.error.exception.user.NotFoundException;
+import hello.backend.error.ErrorCode;
+import hello.backend.error.exception.BusinessException;
 import hello.backend.image.domain.Image;
 import hello.backend.image.dto.ImageResponse;
 import hello.backend.image.repository.ImageRepository;
@@ -29,10 +29,10 @@ public class ImageService {
     @Transactional
     public ImageResponse uploadImage(Long userId, MultipartFile image) throws IOException {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         if (image.isEmpty()) {
-            throw new InvalidFileException("업로드된 파일이 비어 있습니다.");
+            throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE);
         }
 
         String savedFilePath = fileStorageService.saveFile(image);
@@ -58,7 +58,7 @@ public class ImageService {
     // 사용자 이미지 조회
     public List<ImageResponse> getUserImages(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         List<Image> images = imageRepository
                 .findAllByUserId(user.getId());
@@ -71,7 +71,7 @@ public class ImageService {
     // 특정 이미지 조회
     public ImageResponse getImage(Long imageId) {
         Image image = imageRepository.findById(imageId)
-                .orElseThrow(() -> new NotFoundException("이미지를 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
         return toImageResponse(image);
     }
 
