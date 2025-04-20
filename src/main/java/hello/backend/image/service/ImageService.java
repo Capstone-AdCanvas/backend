@@ -44,14 +44,14 @@ public class ImageService {
 
         Image savedImage = imageRepository.save(adImage);
 
-        return toImageResponse(savedImage);
+        return toOriginalImageResponse(savedImage);
     }
 
     // 전체 이미지 조회
     public List<ImageResponse> getAllImages() {
         List<Image> images = imageRepository.findAll();
         return images.stream()
-                .map(this::toImageResponse)
+                .map(this::toFinalImageResponse)
                 .toList();
     }
 
@@ -64,7 +64,7 @@ public class ImageService {
                 .findAllByUserId(user.getId());
 
         return images.stream()
-                .map(this::toImageResponse)
+                .map(this::toFinalImageResponse)
                 .toList();
     }
 
@@ -72,10 +72,10 @@ public class ImageService {
     public ImageResponse getImage(Long imageId) {
         Image image = imageRepository.findById(imageId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
-        return toImageResponse(image);
+        return toFinalImageResponse(image);
     }
 
-    private ImageResponse toImageResponse(Image image) {
+    private ImageResponse toOriginalImageResponse(Image image) {
         return new ImageResponse(
                 image.getId(),
                 image.getUser().getId(),
@@ -83,4 +83,11 @@ public class ImageService {
         );
     }
 
+    private ImageResponse toFinalImageResponse(Image image) {
+        return new ImageResponse(
+                image.getId(),
+                image.getUser().getId(),
+                image.getFinalImage()
+        );
+    }
 }
