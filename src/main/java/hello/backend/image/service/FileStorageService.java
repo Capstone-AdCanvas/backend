@@ -1,13 +1,13 @@
 package hello.backend.image.service;
 
-import hello.backend.error.exception.user.InvalidFileException;
+import hello.backend.error.ErrorCode;
+import hello.backend.error.exception.BusinessException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import reactor.core.publisher.Mono;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,12 +44,12 @@ public class FileStorageService {
             image.transferTo(dest);
 
             if (!Files.exists(dest.toPath())) {
-                throw new InvalidFileException("파일 저장에 실패하였습니다.");
+                throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE);
             }
 
             return filePath;
         } catch (IOException e) {
-            throw new InvalidFileException("파일 저장 중 오류가 발생했습니다.");
+            throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE);
         }
     }
 
@@ -60,7 +60,7 @@ public class FileStorageService {
             ensureDirectoryExists(Paths.get(filePath).getParent().toString());
             Files.write(Paths.get(filePath), imageBytes);
         } catch (IOException e) {
-            throw new InvalidFileException("파일 저장 중 오류가 발생했습니다.");
+            throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE);
         }
     }
 
@@ -68,7 +68,7 @@ public class FileStorageService {
     @Transactional
     public void moveFile(File source, File target) {
         if (!source.exists()) {
-            throw new InvalidFileException("원본 파일이 존재하지 않습니다: " + source.getAbsolutePath());
+            throw new BusinessException(ErrorCode.IMAGE_NOT_FOUND);
         }
 
         try {
@@ -80,7 +80,7 @@ public class FileStorageService {
                 log.warn("원본 파일 삭제 실패: {}", source.getAbsolutePath());
             }
         } catch (IOException e) {
-            throw new InvalidFileException("파일 이동 중 오류가 발생했습니다.");
+            throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE);
         }
     }
 
@@ -95,14 +95,14 @@ public class FileStorageService {
             Files.write(Paths.get(filePath), imageBytes);
             return filePath;
         } catch (IOException | IllegalArgumentException e) {
-            throw new InvalidFileException("Base64 파일 저장 중 오류가 발생했습니다.");
+            throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE);
         }
     }
 
     private void ensureDirectoryExists(String directoryPath) {
         File directory = new File(directoryPath);
         if (!directory.exists() && !directory.mkdirs()) {
-            throw new InvalidFileException("디렉토리를 생성할 수 없습니다: " + directoryPath);
+            throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE);
         }
     }
 
@@ -129,17 +129,17 @@ public class FileStorageService {
 
     private String getFileExtension(String filename) {
         if (filename == null || filename.trim().isEmpty()) {
-            throw new InvalidFileException("파일명이 유효하지 않습니다.");
+            throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE);
         }
 
         int lastDotIndex = filename.lastIndexOf(".");
         if (lastDotIndex == -1) {
-            throw new InvalidFileException("파일 확장자가 없습니다.");
+            throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE);
         }
 
         String extension = filename.substring(lastDotIndex + 1).toLowerCase();
         if (!ALLOWED_EXTENSIONS.contains(extension)) {
-            throw new InvalidFileException("지원되지 않는 파일 형식입니다. (허용된 확장자: png, jpg, jpeg)");
+            throw new BusinessException(ErrorCode.UNSUPPORTED_IMAGE_TYPE);
         }
 
         return extension;
