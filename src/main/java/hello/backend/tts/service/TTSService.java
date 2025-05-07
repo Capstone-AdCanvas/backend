@@ -1,11 +1,10 @@
 package hello.backend.tts.service;
 
+import hello.backend.ai.deepseek.service.DeepSeekService;
 import hello.backend.error.ErrorCode;
 import hello.backend.error.exception.BusinessException;
 import hello.backend.tts.dto.TTSRequest;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -15,19 +14,25 @@ import reactor.core.publisher.Mono;
 
 @Service
 public class TTSService {
+
+    private final DeepSeekService deepSeekService;
     private final WebClient clovaTtsWebClient;
 
-    public TTSService(@Qualifier("clovaTtsWebClient") WebClient clovaTtsWebClient) {
+    public TTSService(@Qualifier("clovaTtsWebClient") WebClient clovaTtsWebClient,
+                      DeepSeekService deepSeekService) {
         this.clovaTtsWebClient = clovaTtsWebClient;
+        this.deepSeekService = deepSeekService;
     }
 
     // tts 변환
     public byte[] getTtsAudio(TTSRequest ttsRequest) {
+        String transformedText = deepSeekService.imageTransFormScript(ttsRequest.getText());
+
         return clovaTtsWebClient.post()
                 .uri("/tts")
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body(BodyInserters.fromFormData("speaker", ttsRequest.getSpeaker())
-                        .with("text", ttsRequest.getText()))
+                        .with("text", transformedText))
                 .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError, response ->
                         response.bodyToMono(String.class)
