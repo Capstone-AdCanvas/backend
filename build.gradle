@@ -35,6 +35,8 @@ dependencies {
     implementation 'ai.fal.client:fal-client:0.7.1'
     //caffeine 설정(임시 캐시)
     implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
+    //ffmpeg 설정
+    implementation "net.bramp.ffmpeg:ffmpeg:0.7.0"
 
 }
 
