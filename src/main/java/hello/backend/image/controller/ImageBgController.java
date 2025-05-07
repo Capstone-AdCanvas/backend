@@ -26,14 +26,14 @@ public class ImageBgController {
 
     @Operation(summary = "이미지 배경 제거", description = "상품의 배경을 제거합니다.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "201", description = "조회 성공"),
             @ApiResponse(responseCode = "400", description = "잘못된 요청 (이미지 응답 없음)"),
             @ApiResponse(responseCode = "404", description = "이미지를 찾을 수 없음")
     })
     @PostMapping("/{imageId}/remove")
     public ResponseEntity<BgRemoveResponse> removeBg(@PathVariable Long imageId) throws JsonProcessingException {
         BgRemoveResponse response = imageBgService.removeBg(imageId);
-        return new ResponseEntity<>(response, HttpStatus.OK);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     @Operation(summary = "이미지 테마 조회", description = "이미지의 테마를 조회합니다.")
@@ -58,7 +58,7 @@ public class ImageBgController {
 
     @Operation(summary = "이미지 배경 생성", description = "상품의 배경을 생성합니다.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "생성 성공"),
+            @ApiResponse(responseCode = "201", description = "생성 성공"),
             @ApiResponse(responseCode = "400", description = "잘못된 요청 (응답 오류)"),
             @ApiResponse(responseCode = "404", description = "이미지/테마/비율을 찾을 수 없음")
     })
@@ -68,12 +68,12 @@ public class ImageBgController {
             @RequestBody BgGenerateRequest request
     ) throws JsonProcessingException {
         List<BgGenerateResponse> response = imageBgService.generateBg(imageId, request);
-        return new ResponseEntity<>(response, HttpStatus.OK);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     @Operation(summary = "이미지 배경 커스텀 생성", description = "상품의 배경을 커스텀하여 생성합니다.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "생성 성공"),
+            @ApiResponse(responseCode = "201", description = "생성 성공"),
             @ApiResponse(responseCode = "400", description = "잘못된 요청 (응답 오류)"),
             @ApiResponse(responseCode = "404", description = "비율을 찾을 수 없음")
     })
@@ -83,12 +83,12 @@ public class ImageBgController {
             @RequestBody BgCustomGenerateRequest request
     ) throws JsonProcessingException {
         List<BgGenerateResponse> response = imageBgService.generateCustomBg(imageId, request);
-        return new ResponseEntity<>(response, HttpStatus.OK);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     @Operation(summary = "최종 이미지 선택", description = "생성한 이미지 중 사용할 이미지의 최종 선택을 합니다.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "저장 성공"),
+            @ApiResponse(responseCode = "201", description = "저장 성공"),
             @ApiResponse(responseCode = "400", description = "파일 이동 오류"),
     })
     @PostMapping("/{imageId}/select-finalImage")
@@ -97,6 +97,6 @@ public class ImageBgController {
             @RequestBody FinalImageRequest request
     ){
         FinalImageResponse response = imageBgService.selectFinalImage(imageId, request);
-        return new ResponseEntity<>(response, HttpStatus.OK);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 }
