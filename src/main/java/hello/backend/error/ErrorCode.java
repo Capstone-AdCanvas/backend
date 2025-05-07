@@ -38,8 +38,14 @@ public enum ErrorCode {
     // CLOVA_TTS
     CLOVA_TTS_SPEAKER_REQUIRED(HttpStatus.BAD_REQUEST, "TTS_VS01", "speaker 파라미터가 입력되지 않았습니다."),
     CLOVA_TTS_UNSUPPORTED_SPEAKER(HttpStatus.BAD_REQUEST, "TTS_VS02", "지원하지 않는 speaker 파라미터입니다."),
+    CLOVA_TTS_SPEED_REQUIRED(HttpStatus.BAD_REQUEST, "TTS_VS03", "speed 파라미터가 입력되지 않았습니다."),
+    CLOVA_TTS_UNSUPPORTED_SPEED(HttpStatus.BAD_REQUEST, "TTS_VS04", "지원하지 않는 speed 파라미터입니다."),
     CLOVA_TTS_TEXT_REQUIRED(HttpStatus.BAD_REQUEST, "TTS_VS05", "text 파라미터가 입력되지 않았습니다."),
     CLOVA_TTS_TEXT_TOO_LONG(HttpStatus.BAD_REQUEST, "TTS_VS06", "text 파라미터 입력 글자 수 초과입니다."),
+    CLOVA_TTS_UNSUPPORTED_EMOTION(HttpStatus.BAD_REQUEST, "TTS_VS14", "입력된 감정(emotion) 파라미터 값을 지원하지 않음"),
+    CLOVA_TTS_SENTENCE_TOO_LONG(HttpStatus.BAD_REQUEST, "TTS_VS18", "문장당 최대 길이(200자) 초과"),
+    CLOVA_TTS_UNSUPPORTED_EMOTION_STRENGTH(HttpStatus.BAD_REQUEST, "TTS_VS19", "입력된 감정 강도(emotion-strength) 파라미터 값을 지원하지 않음"),
+    CLOVA_TTS_FAILED(HttpStatus.BAD_REQUEST, "TTS_VS26", "TTS 생성 실패"),
     CLOVA_TTS_INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "TTS_VS99", "CLOVA TTS 서버 내부 오류입니다.");
 
     private final HttpStatus httpStatus;

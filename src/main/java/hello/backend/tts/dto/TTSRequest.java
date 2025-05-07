@@ -10,4 +10,7 @@ import lombok.NoArgsConstructor;
 public class TTSRequest {
     private String speaker;
     private String text;
+    private int emotion;
+    private int emotionStrength;
+    private int speed;
 }
