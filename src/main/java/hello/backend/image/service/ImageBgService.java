@@ -13,6 +13,7 @@ import hello.backend.image.repository.ImageRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.MediaType;
@@ -33,7 +34,8 @@ public class ImageBgService {
 
     private final ImageRepository imageRepository;
     private final FileStorageService fileStorageService;
-    private final WebClient webClient;
+    @Qualifier("draphArtWebClient")
+    private final WebClient draphArtWebClient;
 
     @Value("${DRAPH_ART_USERNAME}")
     private String USERNAME;
@@ -67,7 +69,7 @@ public class ImageBgService {
         formData.add("image", fileResource);
         formData.add("concept_option", conceptOptionJson);
 
-        String base64ArrayString = webClient.post()
+        String base64ArrayString = draphArtWebClient.post()
                 .contentType(MediaType.MULTIPART_FORM_DATA)
                 .body(BodyInserters.fromMultipartData(formData))
                 .retrieve()
@@ -132,7 +134,7 @@ public class ImageBgService {
         formData.add("output_h", selectedSize.getHeight());
         formData.add("concept_option", conceptOptionJson);
 
-        String jsonResponse = webClient.post()
+        String jsonResponse = draphArtWebClient.post()
                 .contentType(MediaType.MULTIPART_FORM_DATA)
                 .body(BodyInserters.fromMultipartData(formData))
                 .retrieve()
@@ -174,7 +176,7 @@ public class ImageBgService {
         formData.add("output_h", selectedSize.getHeight());
         formData.add("concept_option", conceptOptionJson);
 
-        String jsonResponse = webClient.post()
+        String jsonResponse = draphArtWebClient.post()
                 .contentType(MediaType.MULTIPART_FORM_DATA)
                 .body(BodyInserters.fromMultipartData(formData))
                 .retrieve()
