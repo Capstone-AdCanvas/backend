@@ -14,7 +14,7 @@ public enum ErrorCode {
     USER_ALREADY_EXISTS(HttpStatus.CONFLICT, "USER_409", "이미 존재하는 사용자입니다."),
     INVALID_USER_INPUT(HttpStatus.BAD_REQUEST, "USER_400", "사용자 입력값이 올바르지 않습니다."),
 
-    //fal.ai
+    // fal.ai
     FAL_INPUT_INVALID(HttpStatus.BAD_REQUEST, "FAL_400", "입력값이 올바르지 않습니다."),
     FAL_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "FAL_401", "인증이 필요하거나 인증에 실패했습니다."),
     FAL_NOT_FOUND(HttpStatus.NOT_FOUND, "FAL_404", "요청한 리소스를 찾을 수 없습니다."),
@@ -33,7 +33,14 @@ public enum ErrorCode {
     DRAPH_ART_INVALID_INPUT(HttpStatus.BAD_REQUEST, "DRAPH_ART_400", "드랩아트 요청이 올바르지 않습니다."),
     DRAPH_ART_EMPTY_RESPONSE(HttpStatus.BAD_REQUEST, "DRAPH_ART_400_EMPTY", "배경 생성 API 응답이 비어 있습니다."),
     DRAPH_ART_RESPONSE_PROCESSING_FAILED(HttpStatus.BAD_REQUEST, "DRAPH_ART_400_RESPONSE", "배경 생성 응답을 처리할 수 없습니다."),
-    DRAPH_ART_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "DRAPH_ART_500", "드랩아트 생성 중 오류가 발생했습니다.");
+    DRAPH_ART_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "DRAPH_ART_500", "드랩아트 생성 중 오류가 발생했습니다."),
+
+    // CLOVA_TTS
+    CLOVA_TTS_SPEAKER_REQUIRED(HttpStatus.BAD_REQUEST, "TTS_VS01", "speaker 파라미터가 입력되지 않았습니다."),
+    CLOVA_TTS_UNSUPPORTED_SPEAKER(HttpStatus.BAD_REQUEST, "TTS_VS02", "지원하지 않는 speaker 파라미터입니다."),
+    CLOVA_TTS_TEXT_REQUIRED(HttpStatus.BAD_REQUEST, "TTS_VS05", "text 파라미터가 입력되지 않았습니다."),
+    CLOVA_TTS_TEXT_TOO_LONG(HttpStatus.BAD_REQUEST, "TTS_VS06", "text 파라미터 입력 글자 수 초과입니다."),
+    CLOVA_TTS_INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "TTS_VS99", "CLOVA TTS 서버 내부 오류입니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
