@@ -16,7 +16,6 @@ services:
       - DRAPH_ART_URL=${DRAPH_ART_URL}
       - DRAPH_ART_TOKEN=${DRAPH_ART_TOKEN}
       - DRAPH_ART_USERNAME=${DRAPH_ART_USERNAME}
-      - FILE_FINAL_DIR=${FILE_FINAL_DIR}
     depends_on:
       db:
         condition: service_healthy
@@ -28,7 +27,7 @@ services:
       - MYSQL_DATABASE=${MYSQL_DATABASE}
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
     ports:
-      - "3307:3306"
+      - "3309:3306"
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
