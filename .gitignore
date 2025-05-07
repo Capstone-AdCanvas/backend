@@ -47,3 +47,5 @@ target/
 .env
 application.yml
 uploads/
+
+/src/main/resources/static/audioVideo/*
