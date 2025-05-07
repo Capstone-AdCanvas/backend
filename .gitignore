@@ -49,3 +49,5 @@ application.yml
 uploads/
 
 /src/main/resources/static/audioVideo/*
+
+.DS_Store
