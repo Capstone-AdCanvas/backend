@@ -28,6 +28,9 @@ public class FileStorageService {
     @Value("${file.temp-dir}")
     private String tempDir;
 
+    @Value("${file.logo-dir}")
+    private String logoPath;
+
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png");
 
     // 이미지 저장 (업로드)
@@ -39,6 +42,41 @@ public class FileStorageService {
             String extension = getFileExtension(image.getOriginalFilename());
             String newFileName = UUID.randomUUID().toString() + "." + extension;
             String filePath = uploadDir + File.separator + newFileName;
+
+            File dest = new File(filePath);
+
+            File parentDir = dest.getParentFile();
+            if (!parentDir.canWrite()) {
+                boolean permissionGranted = parentDir.setWritable(true);
+                if (!permissionGranted) {
+                    throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE, "디렉토리에 쓰기 권한 설정 실패");
+                }
+            }
+
+            log.info("파일 저장 시작: {}", image.getOriginalFilename());
+            log.info("업로드 디렉토리: {}", uploadDir);
+            image.transferTo(dest);
+            if (!dest.exists() || dest.length() == 0) {
+                throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE, "파일 저장에 실패했습니다.");
+            }
+            log.info("파일 저장 완료: {}", dest.getAbsolutePath());
+            log.info("파일 크기: {}", dest.length());
+
+            return filePath;
+        } catch (IOException e) {
+            throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE, "파일 업로드 중 오류 발생");
+        }
+    }
+
+    // 로고 이미지 저장 (업로드)
+    @Transactional
+    public String saveLogoFile(MultipartFile image) {
+        try {
+            ensureDirectoryExists(logoPath);
+
+            String extension = getFileExtension(image.getOriginalFilename());
+            String newFileName = UUID.randomUUID().toString() + "." + extension;
+            String filePath = logoPath + File.separator + newFileName;
 
             File dest = new File(filePath);
             image.transferTo(dest);
