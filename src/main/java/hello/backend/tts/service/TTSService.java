@@ -4,6 +4,8 @@ import hello.backend.ai.deepseek.service.DeepSeekService;
 import hello.backend.error.ErrorCode;
 import hello.backend.error.exception.BusinessException;
 import hello.backend.tts.dto.TTSRequest;
+import hello.backend.tts.dto.TTSResponse;
+import hello.backend.tts.dto.enums.TTSModel;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -11,6 +13,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class TTSService {
@@ -22,6 +28,13 @@ public class TTSService {
                       DeepSeekService deepSeekService) {
         this.clovaTtsWebClient = clovaTtsWebClient;
         this.deepSeekService = deepSeekService;
+    }
+
+    // tts 모델 조회
+    public List<TTSResponse> getTTSModel() {
+        return Arrays.stream(TTSModel.values())
+                .map(TTSResponse::from)
+                .collect(Collectors.toList());
     }
 
     // tts 변환

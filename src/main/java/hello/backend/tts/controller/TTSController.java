@@ -1,16 +1,16 @@
 package hello.backend.tts.controller;
 
 import hello.backend.tts.dto.TTSRequest;
+import hello.backend.tts.dto.TTSResponse;
 import hello.backend.tts.service.TTSService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/tts")
@@ -35,5 +35,14 @@ public class TTSController {
                 .build());
 
         return new ResponseEntity<>(audioData, headers, HttpStatus.CREATED);
+    }
+
+    @Operation(summary = "tts 모델 조회", description = "tts 모델을 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공")
+    })
+    @GetMapping("")
+    public ResponseEntity<List<TTSResponse>> GetTtsModel() {
+        return new ResponseEntity<>(ttsService.getTTSModel(), HttpStatus.OK);
     }
 }
