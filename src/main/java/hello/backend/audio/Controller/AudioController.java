@@ -1,5 +1,6 @@
 package hello.backend.audio.Controller;
 
+import hello.backend.audio.dto.MergeRequest;
 import hello.backend.audio.service.AudioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/audios")
@@ -27,9 +29,8 @@ public class AudioController {
             @ApiResponse(responseCode = "400", description = "잘못된 입력값입니다."),
     })
     @GetMapping("/merge")
-    public ResponseEntity<Resource> mergeVideoAudio(@RequestParam String videoUrl,
-                                                    @RequestParam String tema) throws IOException {
-        File file = audioService.mergeVideoAudio(videoUrl, tema);
+    public ResponseEntity<Resource> mergeVideoAudio(@RequestParam List<String> videoUrls,@RequestParam String tema) throws IOException {
+        File file = audioService.mergeVideoAudio(videoUrls, tema);
         Resource resource = new FileSystemResource(file);
 
         return ResponseEntity.ok()
