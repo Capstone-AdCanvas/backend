@@ -23,7 +23,7 @@ public class ImageController {
 
     @Operation(summary = "이미지 업로드", description = "상품의 이미지를 업로드합니다.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "업로드 성공"),
+            @ApiResponse(responseCode = "201", description = "업로드 성공"),
             @ApiResponse(responseCode = "400", description = "잘못된 파일 형식 또는 업로드 오류"),
             @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음"),
             @ApiResponse(responseCode = "415", description = "지원되지 않는 미디어 타입")
@@ -33,7 +33,7 @@ public class ImageController {
             @RequestParam("userId") Long userId,
             @RequestParam("image") MultipartFile image) throws IOException {
         ImageResponse response = imageService.uploadImage(userId, image);
-        return new ResponseEntity<>(response, HttpStatus.OK);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     @Operation(summary = "모든 이미지 조회", description = "모든 이미지를 조회합니다.")
