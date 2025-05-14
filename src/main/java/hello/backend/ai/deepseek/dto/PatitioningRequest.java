@@ -1,4 +1,10 @@
 package hello.backend.ai.deepseek.dto;
 
-public class PatitioningDto {
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter @Setter
+public class PatitioningRequest {
+    private String prompt;
+    private Integer second;
 }
