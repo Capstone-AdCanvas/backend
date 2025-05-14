@@ -22,6 +22,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ai.fal.client.exception.FalException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -37,13 +39,18 @@ public class VideoService {
     private final Cache<String, TextToVideoRequest> requestTextCache;
     private final Cache<String, ImageToVideoRequest> requestImageCache;
 
-    //image-to-video(kling 모델) 생성 - 비동기 큐
+    //text-to-video(kling 모델)병렬 생성 - 비동기 큐
     @Transactional
-    public QueueStatus.InQueue createTextToVideo(TextToVideoRequest request) {
-        String finalprompt = deepSeekService.imageTransFormScript(request.getPrompt());
+    public List<QueueStatus.InQueue> createTextToVideo(TextToVideoRequest request) {
+        int count = request.getSecond() / 5;
 
+        List<QueueStatus.InQueue> inQueList = new ArrayList<>();
+        List<String> finalprompt = deepSeekService.textPartitioningTransFormScript(request);
+
+
+        for (int i = 0; i < count; i++) {
         Map<String, Object> input = Map.of(
-                "prompt", finalprompt,
+                "prompt", finalprompt.get(i),
                 "duration", request.getDuration(),
                 "aspect_ratio", request.getAspect_ratio()
         );
@@ -52,33 +59,38 @@ public class VideoService {
                 .input(input)
                 .build();
         try {
-            QueueStatus.InQueue inQueue = falClient.queue().submit("fal-ai/kling-video/v1.6/pro/text-to-video", options);
-            String requestId = inQueue.getRequestId();
-            requestTextCache.put(requestId, request);
 
-            return inQueue;
-        } catch (FalException e) {
-            log.error("🔥 Fal 예외 발생: {}", e.getMessage(), e);
-            String msg = e.getMessage();
+                QueueStatus.InQueue inQueue = falClient.queue().submit("fal-ai/kling-video/v1.6/pro/text-to-video", options);
+                String requestId = inQueue.getRequestId();
+                requestTextCache.put(requestId, request);
 
-            if (msg != null) {
-                if (msg.contains("400")) {
-                    throw new BusinessException(ErrorCode.FAL_INPUT_INVALID, "입력값이 올바르지 않습니다.");
-                } else if (msg.contains("401")) {
-                    throw new BusinessException(ErrorCode.FAL_UNAUTHORIZED, "인증이 필요하거나 인증에 실패했습니다.");
-                } else if (msg.contains("404")) {
-                    throw new BusinessException(ErrorCode.FAL_NOT_FOUND, "요청한 리소스를 찾을 수 없습니다.");
-                } else if (msg.contains("422")) {
-                    throw new BusinessException(ErrorCode.FAL_CONTENT_VIOLATION, "정책 위반 콘텐츠입니다.");
-                } else if (msg.contains("504") || msg.contains("generation_timeout")) {
-                    throw new BusinessException(ErrorCode.FAL_GENERATION_TIMEOUT, "영상 생성이 너무 오래 걸렸습니다.");
-                } else if (msg.contains("500") || msg.contains("image_load_error")) {
-                    throw new BusinessException(ErrorCode.FAL_INTERNAL_ERROR, "AI 서버 내부 오류입니다.");
+                inQueList.add(inQueue);
+
+            } catch(FalException e){
+                log.error("🔥 Fal 예외 발생: {}", e.getMessage(), e);
+                String msg = e.getMessage();
+
+                if (msg != null) {
+                    if (msg.contains("400")) {
+                        throw new BusinessException(ErrorCode.FAL_INPUT_INVALID, "입력값이 올바르지 않습니다.");
+                    } else if (msg.contains("401")) {
+                        throw new BusinessException(ErrorCode.FAL_UNAUTHORIZED, "인증이 필요하거나 인증에 실패했습니다.");
+                    } else if (msg.contains("404")) {
+                        throw new BusinessException(ErrorCode.FAL_NOT_FOUND, "요청한 리소스를 찾을 수 없습니다.");
+                    } else if (msg.contains("422")) {
+                        throw new BusinessException(ErrorCode.FAL_CONTENT_VIOLATION, "정책 위반 콘텐츠입니다.");
+                    } else if (msg.contains("504") || msg.contains("generation_timeout")) {
+                        throw new BusinessException(ErrorCode.FAL_GENERATION_TIMEOUT, "영상 생성이 너무 오래 걸렸습니다.");
+                    } else if (msg.contains("500") || msg.contains("image_load_error")) {
+                        throw new BusinessException(ErrorCode.FAL_INTERNAL_ERROR, "AI 서버 내부 오류입니다.");
+                    }
                 }
-            }
 
-            throw new BusinessException(ErrorCode.FAL_INTERNAL_ERROR, "Fal 예외 발생: " + msg);
+                throw new BusinessException(ErrorCode.FAL_INTERNAL_ERROR, "Fal 예외 발생: " + msg);
+            }
         }
+
+        return inQueList;
     }
 
     //image-to-video(kling 모델) 생성 - 비동기 큐
