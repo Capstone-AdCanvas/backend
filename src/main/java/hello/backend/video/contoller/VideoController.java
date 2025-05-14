@@ -1,6 +1,7 @@
 package hello.backend.video.contoller;
 
 import ai.fal.client.queue.QueueStatus;
+import hello.backend.ai.deepseek.dto.PatitioningRequest;
 import hello.backend.ai.deepseek.service.DeepSeekService;
 import hello.backend.video.dto.*;
 import hello.backend.video.service.VideoService;
@@ -12,6 +13,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/videos")
@@ -29,14 +33,20 @@ public class VideoController {
             @ApiResponse(responseCode = "500", description = "서버 내부 오류입니다.")
     })
     @PostMapping("/texts/Kling-pro")
-    public ResponseEntity<SubmitQueueResponse> createTextToVideo(@RequestBody TextToVideoRequest request) {
-        QueueStatus.InQueue inQueue = videoService.createTextToVideo(request);
-        SubmitQueueResponse response = new SubmitQueueResponse(
-                inQueue.getRequestId(),
-                "요청이 큐에 등록되었습니다."
-        );
+    public ResponseEntity<List<SubmitQueueResponse>> createTextToVideo(@RequestBody TextToVideoRequest request) {
+        List<QueueStatus.InQueue> queueStatuses = videoService.createTextToVideo(request);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        List<SubmitQueueResponse> responses = new ArrayList<>();
+
+        for (QueueStatus.InQueue status : queueStatuses) {
+            SubmitQueueResponse individualResponse = new SubmitQueueResponse(
+                    status.getRequestId(), // 각 작업의 requestId
+                    String.format("씬에 대한 비디오 생성 요청이 _id: %s_ 로 큐에 등록되었습니다.", status.getRequestId())
+            );
+            responses.add(individualResponse);
+        }
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(responses);
     }
 
     @Operation(summary = "image to video 생성(Kling-pro-v1.6 모델)", description = "이미지를 기반으로 영상을 생성합니다.")
@@ -111,6 +121,18 @@ public class VideoController {
 
         return ResponseEntity.ok(result);
     }
+
+    @Operation(summary = "DeepSeek prompt 병렬 테스트(text)", description = "prompt를 DeepSeek에 보내 변환된 결과를 확인합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "변환 성공")
+    })
+    @PostMapping("/transforms/PatitioningText")
+    public ResponseEntity<List<String>> textPartitioningTransFormScript(@RequestBody TextToVideoRequest request) {
+        List<String> result = deepSeekService.textPartitioningTransFormScript(request);
+
+        return ResponseEntity.ok(result);
+    }
+
 
     @Operation(summary = "DeepSeek prompt 테스트(image)", description = "prompt를 DeepSeek에 보내 변환된 결과를 확인합니다.")
     @ApiResponses(value = {

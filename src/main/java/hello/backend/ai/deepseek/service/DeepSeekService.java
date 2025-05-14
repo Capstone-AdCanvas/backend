@@ -1,15 +1,19 @@
 package hello.backend.ai.deepseek.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import hello.backend.ai.deepseek.dto.PatitioningRequest;
+import hello.backend.video.dto.TextToVideoRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class DeepSeekService {
@@ -86,5 +90,71 @@ public class DeepSeekService {
         Map<String, Object> firstChoice = choices.get(0);
         Map<String, String> message = (Map<String, String>) firstChoice.get("message");
         return message.get("content");
+    }
+
+    //병렬 프롬프트 리라이팅
+    //-----------------------------------------------------------
+    public List<String> textPartitioningTransFormScript(TextToVideoRequest request) {
+
+        int count = request.getSecond() / 5;
+
+        log.info("second: {}", request.getSecond());
+        log.info("count: {}", count);
+
+        String prompt = """
+            You are a public awareness video creator.
+                                                   Based on the sentence below, create a {second} second video scenario.
+                                                   The video **must** consist of **exactly {count} distinct scenes**. Each scene should be exactly **5 seconds** long, flowing naturally from one to the next.
+                                                   The sequence of these {count} scenes should form a coherent narrative with a clear progression (e.g., introduction, development, climax, resolution), appropriately adapted for the {count} scenes.
+                                                   Each scene should be realistic, filmable, and focused on visually clear transitions — no text, narration, or subtitles.
+                                                   Avoid poetic or abstract descriptions. Focus on grounded, everyday visuals that can be captured in a real-world setting.
+                                                   Describe each scene clearly in **English**, with simple, specific details. **Ensure each scene description ends with an ellipsis (...).**
+                
+                                                   **Important Formatting Instructions:**
+                                                   Please provide the description for each of the {count} scenes.
+                                                   Ensure that each scene's description is separated from the next **using a double newline character only**. Do not include scene numbers like "Scene 1:", "Scene 2:" unless it's naturally part of the description.
+                
+                                                   For example, if creating 3 scenes, the output should look like this:
+                                                   [Detailed, filmable description for the first 5-second scene, focusing on visuals...]
+                
+                                                   [Detailed, filmable description for the second 5-second scene, flowing from the first, focusing on visuals...]
+                
+                                                   [Detailed, filmable description for the third 5-second scene, flowing from the second, focusing on visuals...]
+                
+                                                   The user-submitted sentence is:
+        """ + request.getPrompt();
+
+        String finalPrompt = prompt
+                .replace("{second}", String.valueOf(request.getSecond()))
+                .replace("{count}", String.valueOf(count));
+
+        Map<String, Object> requestBody = Map.of(
+                "model", model,
+                "messages", List.of(Map.of(
+                        "role", "user",
+                        "content", finalPrompt
+                ))
+        );
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+
+        ResponseEntity<Map> response = restTemplate.exchange(apiUrl, HttpMethod.POST, entity, Map.class);
+
+        List<Map<String, Object>> choices = (List<Map<String, Object>>) response.getBody().get("choices");
+        Map<String, Object> firstChoice = choices.get(0);
+        Map<String, String> message = (Map<String, String>) firstChoice.get("message");
+
+        List<String> stepList = new ArrayList<>();
+
+        String[] stepArray = message.get("content").split("\n\n");
+
+        for (int i = 0; i < stepArray.length; i++) {
+            stepList.add(stepArray[i]);
+        }
+
+        return stepList;
     }
 }
