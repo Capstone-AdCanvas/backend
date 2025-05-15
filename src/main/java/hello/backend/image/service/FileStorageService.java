@@ -25,11 +25,20 @@ public class FileStorageService {
     @Value("${file.upload-dir}")
     private String uploadDir;
 
+    @Value("${file.upload-url}")
+    private String uploadUrl;
+
     @Value("${file.temp-dir}")
     private String tempDir;
 
+    @Value("${file.temp-url}")
+    private String tempUrl;
+
     @Value("${file.logo-dir}")
     private String logoPath;
+
+    @Value("${file.logo-url}")
+    private String logoUrl;
 
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png");
 
@@ -53,16 +62,12 @@ public class FileStorageService {
                 }
             }
 
-            log.info("파일 저장 시작: {}", image.getOriginalFilename());
-            log.info("업로드 디렉토리: {}", uploadDir);
             image.transferTo(dest);
             if (!dest.exists() || dest.length() == 0) {
                 throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE, "파일 저장에 실패했습니다.");
             }
-            log.info("파일 저장 완료: {}", dest.getAbsolutePath());
-            log.info("파일 크기: {}", dest.length());
 
-            return filePath;
+            return logoUrl + newFileName;
         } catch (IOException e) {
             throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE, "파일 업로드 중 오류 발생");
         }
@@ -85,13 +90,13 @@ public class FileStorageService {
                 throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE);
             }
 
-            return filePath;
+            return uploadUrl + newFileName;
         } catch (IOException e) {
             throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE);
         }
     }
 
-    // 이미지 저장 (배경 제거, 임시)
+    // 이미지 저장 (배경 제거)
     @Transactional
     public void saveBgRemoveFile(byte[] imageBytes, String filePath) {
         try {
@@ -122,16 +127,18 @@ public class FileStorageService {
         }
     }
 
+    // 배경 생성 이미지 저장
     @Transactional
     public String saveBase64Image(String base64Data) {
         try {
             ensureDirectoryExists(tempDir);
 
             byte[] imageBytes = Base64.getDecoder().decode(base64Data);
-            String filePath = Paths.get(tempDir, "processed_" + UUID.randomUUID() + ".png").toString();
+            String fileName = "processed_" + UUID.randomUUID() + ".png";
+            String filePath = Paths.get(tempDir, fileName).toString();
 
             Files.write(Paths.get(filePath), imageBytes);
-            return filePath;
+            return tempUrl + fileName;
         } catch (IOException | IllegalArgumentException e) {
             throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE);
         }
