@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import hello.backend.error.ErrorCode;
 import hello.backend.error.exception.BusinessException;
 import hello.backend.image.domain.Image;
-import hello.backend.image.domain.enums.ImageSize;
 import hello.backend.image.domain.enums.ImageTheme;
 import hello.backend.image.dto.*;
 import hello.backend.image.repository.ImageRepository;
@@ -40,14 +39,23 @@ public class ImageBgService {
     @Value("${DRAPH_ART_USERNAME}")
     private String USERNAME;
 
+    @Value("${file.upload-dir}")
+    private String uploadDir;
+
     @Value("${file.bgremove-dir}")
     private String bgRemoveDir;
+
+    @Value("${file.bgremove-url}")
+    private String bgRemoveUrl;
 
     @Value("${file.temp-dir}")
     private String tempDir;
 
     @Value("${file.final-dir}")
     private String finalDir;
+
+    @Value("${file.final-url}")
+    private String finalUrl;
 
     // 이미지 배경 제거
     @Transactional
@@ -56,13 +64,17 @@ public class ImageBgService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
 
         String uploadImagePath = image.getOriginalImage();
-        String outputImagePath = Paths.get(bgRemoveDir, String.format("processed_%d.png", image.getId())).toString();
+        String fileNameOriginal = Paths.get(uploadImagePath).getFileName().toString();
+        String absoluteOriginalPath = Paths.get(uploadDir, fileNameOriginal).toString();
+
+        String processedFileName = String.format("processed_%d.png", image.getId());
+        String outputImagePath = Paths.get(bgRemoveDir, processedFileName).toString();
 
         Map<String, Object> conceptOptionMap = new HashMap<>();
         conceptOptionMap.put("product_size", "auto");
         String conceptOptionJson = new ObjectMapper().writeValueAsString(conceptOptionMap);
 
-        FileSystemResource fileResource = new FileSystemResource(new File(uploadImagePath));
+        FileSystemResource fileResource = new FileSystemResource(new File(absoluteOriginalPath));
         MultiValueMap<String, Object> formData = new LinkedMultiValueMap<>();
         formData.add("username", USERNAME);
         formData.add("gen_type", "remove_bg");
@@ -88,7 +100,7 @@ public class ImageBgService {
             byte[] imageBytes = Base64.getDecoder().decode(base64);
 
             fileStorageService.saveBgRemoveFile(imageBytes, outputImagePath);
-            image.setProcessedImage(outputImagePath);
+            image.setProcessedImage(bgRemoveUrl + processedFileName);
             imageRepository.save(image);
 
             return toBgRemoveResponse(image);
@@ -105,11 +117,8 @@ public class ImageBgService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
 
         String uploadImagePath = image.getProcessedImage();
-
-        ImageSize selectedSize = Arrays.stream(ImageSize.values())
-                .filter(size -> size.getRatio().equals(request.getRatio()))
-                .findFirst()
-                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_IMAGE_RATIO));
+        String fileName = Paths.get(uploadImagePath).getFileName().toString();
+        String actualPath = Paths.get(bgRemoveDir, fileName).toString();
 
         ImageTheme theme = Arrays.stream(ImageTheme.values())
                 .filter(t -> t.name().equalsIgnoreCase(request.getConcept_option()))
@@ -125,13 +134,13 @@ public class ImageBgService {
 
         log.info("전송된 concept_option JSON: {}", conceptOptionJson);
 
-        FileSystemResource fileResource = new FileSystemResource(new File(uploadImagePath));
+        FileSystemResource fileResource = new FileSystemResource(new File(actualPath));
         MultiValueMap<String, Object> formData = new LinkedMultiValueMap<>();
         formData.add("image", fileResource);
         formData.add("username", USERNAME);
         formData.add("gen_type", "concept");
-        formData.add("output_w", selectedSize.getWidth());
-        formData.add("output_h", selectedSize.getHeight());
+        formData.add("output_w", 1080);
+        formData.add("output_h", 1080);
         formData.add("concept_option", conceptOptionJson);
 
         String jsonResponse = draphArtWebClient.post()
@@ -151,11 +160,9 @@ public class ImageBgService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
 
         String uploadImagePath = image.getProcessedImage();
+        String fileName = Paths.get(uploadImagePath).getFileName().toString();
+        String actualPath = Paths.get(tempDir, fileName).toString();
         String prompt = request.getCustomPrompt();
-        ImageSize selectedSize = Arrays.stream(ImageSize.values())
-                .filter(size -> size.getRatio().equals(request.getRatio()))
-                .findFirst()
-                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_IMAGE_RATIO));
 
         ObjectMapper objectMapper = new ObjectMapper();
         Map<String, Object> conceptOptionMap = new HashMap<>();
@@ -167,13 +174,13 @@ public class ImageBgService {
 
         log.info("전송된 concept_option JSON: {}", conceptOptionJson);
 
-        FileSystemResource fileResource = new FileSystemResource(new File(uploadImagePath));
+        FileSystemResource fileResource = new FileSystemResource(new File(actualPath));
         MultiValueMap<String, Object> formData = new LinkedMultiValueMap<>();
         formData.add("image", fileResource);
         formData.add("username", USERNAME);
         formData.add("gen_type", "concept");
-        formData.add("output_w", selectedSize.getWidth());
-        formData.add("output_h", selectedSize.getHeight());
+        formData.add("output_w", 1080);
+        formData.add("output_h", 1080);
         formData.add("concept_option", conceptOptionJson);
 
         String jsonResponse = draphArtWebClient.post()
@@ -193,16 +200,19 @@ public class ImageBgService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
 
         File tempFile = new File(tempDir, request.getFileName());
+        log.info("생성파일: {}", tempFile);
         String fileName = "final_" + imageId + ".png";
         File finalFile = new File(finalDir, fileName);
+        log.info("최종파일: {}", finalFile);
 
         fileStorageService.moveFile(tempFile, finalFile);
         log.info("파일 이동 완료: {} -> {}", tempFile.getAbsolutePath(), finalFile.getAbsolutePath());
         fileStorageService.cleanUpTempDir();
 
-        image.setFinalImage(finalFile.getAbsolutePath());
+        String finalImageUrl = finalUrl + fileName;
+        image.setFinalImage(finalImageUrl);
         imageRepository.save(image);
-        return new FinalImageResponse(image.getId(), image.getFinalImage());
+        return new FinalImageResponse(image.getId(), finalImageUrl);
     }
 
     // 생성된 이미지 저장
