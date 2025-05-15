@@ -9,5 +9,4 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class BgCustomGenerateRequest {
     private String customPrompt;
-    private String ratio;
 }
