@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import hello.backend.error.ErrorCode;
 import hello.backend.error.exception.BusinessException;
 import hello.backend.image.domain.Image;
-import hello.backend.image.domain.enums.ImageSize;
 import hello.backend.image.domain.enums.ImageTheme;
 import hello.backend.image.dto.*;
 import hello.backend.image.repository.ImageRepository;
@@ -106,11 +105,6 @@ public class ImageBgService {
 
         String uploadImagePath = image.getProcessedImage();
 
-        ImageSize selectedSize = Arrays.stream(ImageSize.values())
-                .filter(size -> size.getRatio().equals(request.getRatio()))
-                .findFirst()
-                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_IMAGE_RATIO));
-
         ImageTheme theme = Arrays.stream(ImageTheme.values())
                 .filter(t -> t.name().equalsIgnoreCase(request.getConcept_option()))
                 .findFirst()
@@ -130,8 +124,8 @@ public class ImageBgService {
         formData.add("image", fileResource);
         formData.add("username", USERNAME);
         formData.add("gen_type", "concept");
-        formData.add("output_w", selectedSize.getWidth());
-        formData.add("output_h", selectedSize.getHeight());
+        formData.add("output_w", 1080);
+        formData.add("output_h", 1080);
         formData.add("concept_option", conceptOptionJson);
 
         String jsonResponse = draphArtWebClient.post()
@@ -152,10 +146,6 @@ public class ImageBgService {
 
         String uploadImagePath = image.getProcessedImage();
         String prompt = request.getCustomPrompt();
-        ImageSize selectedSize = Arrays.stream(ImageSize.values())
-                .filter(size -> size.getRatio().equals(request.getRatio()))
-                .findFirst()
-                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_IMAGE_RATIO));
 
         ObjectMapper objectMapper = new ObjectMapper();
         Map<String, Object> conceptOptionMap = new HashMap<>();
@@ -172,8 +162,8 @@ public class ImageBgService {
         formData.add("image", fileResource);
         formData.add("username", USERNAME);
         formData.add("gen_type", "concept");
-        formData.add("output_w", selectedSize.getWidth());
-        formData.add("output_h", selectedSize.getHeight());
+        formData.add("output_w", 1080);
+        formData.add("output_h", 1080);
         formData.add("concept_option", conceptOptionJson);
 
         String jsonResponse = draphArtWebClient.post()

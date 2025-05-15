@@ -8,6 +8,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class BgGenerateRequest {
-    private String ratio;
     private String concept_option;
 }
