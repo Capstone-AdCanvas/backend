@@ -4,6 +4,8 @@ import hello.backend.error.ErrorCode;
 import hello.backend.error.ErrorResponse;
 import hello.backend.error.exception.BusinessException;
 import hello.backend.user.domain.User;
+import hello.backend.user.dto.UserLoginRequest;
+import hello.backend.user.dto.UserLoginResponse;
 import hello.backend.user.dto.UserUpdateRequest;
 import hello.backend.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
@@ -40,6 +42,23 @@ public class UserService {
                 .build();
 
         return userRepository.save(user);
+    }
+
+    //로그인
+    @Transactional
+    public UserLoginResponse loginUser(UserLoginRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        if (!user.getPassword().equals(request.getPassword())) {
+            throw new BusinessException(ErrorCode.INVALID_USER_INPUT);
+        }
+
+        return UserLoginResponse.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .build();
     }
 
     //회원조회
