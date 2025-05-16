@@ -1,6 +1,8 @@
 package hello.backend.user.controller;
 
 import hello.backend.user.domain.User;
+import hello.backend.user.dto.UserLoginRequest;
+import hello.backend.user.dto.UserLoginResponse;
 import hello.backend.user.dto.UserRegisterRequest;
 import hello.backend.user.dto.UserUpdateRequest;
 import hello.backend.user.service.UserService;
@@ -8,6 +10,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,6 +39,19 @@ public class UserController {
         );
 
         return new ResponseEntity<>(createUser, HttpStatus.CREATED);
+    }
+
+    @Operation(summary = "회원 로그인", description = "회원 로그인을 합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "회원 로그인 성공"),
+            @ApiResponse(responseCode = "404", description = "잘못된 요청: 회원을 찾을 수 없음")
+    })
+    @PostMapping("/login")
+    public ResponseEntity<UserLoginResponse> LoginUser(
+            @RequestBody @Valid UserLoginRequest request) {
+
+        UserLoginResponse response = userService.loginUser(request);
+        return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "회원조회", description = "회원을 조회합니다.")
