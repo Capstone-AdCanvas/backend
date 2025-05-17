@@ -67,7 +67,7 @@ public class FileStorageService {
                 throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE, "파일 저장에 실패했습니다.");
             }
 
-            return logoUrl + newFileName;
+            return uploadUrl + newFileName;
         } catch (IOException e) {
             throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE, "파일 업로드 중 오류 발생");
         }
@@ -90,7 +90,7 @@ public class FileStorageService {
                 throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE);
             }
 
-            return uploadUrl + newFileName;
+            return logoUrl + newFileName;
         } catch (IOException e) {
             throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE);
         }
