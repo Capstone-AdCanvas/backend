@@ -9,8 +9,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 @RestController
 @RequestMapping("/api/v1/tts")
@@ -24,17 +29,18 @@ public class TTSController {
             @ApiResponse(responseCode = "400", description = "잘못된 요청"),
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
-    @PostMapping("")
-    public ResponseEntity<byte[]> ConvertTts(@RequestBody TTSRequest ttsRequest) {
-        byte[] audioData = ttsService.getTtsAudio(ttsRequest);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-        headers.setContentDisposition(ContentDisposition.builder("inline")
-                .filename("speech.mp3")
-                .build());
-
-        return new ResponseEntity<>(audioData, headers, HttpStatus.CREATED);
+    @PostMapping(value = "", produces = "application/zip")
+    public Mono<ResponseEntity<byte[]>> ConvertTts(@RequestBody TTSRequest ttsRequest) {
+        return ttsService.getTtsAudioListAsync(ttsRequest)
+                .map(audioList -> {
+                    byte[] zipBytes = ttsService.zipAudioFiles(audioList);
+                    HttpHeaders headers = new HttpHeaders();
+                    headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+                    headers.setContentDisposition(ContentDisposition.builder("attachment")
+                            .filename("speeches.zip")
+                            .build());
+                    return new ResponseEntity<>(zipBytes, headers, HttpStatus.CREATED);
+                });
     }
 
     @Operation(summary = "tts 모델 조회", description = "tts 모델을 조회합니다.")
