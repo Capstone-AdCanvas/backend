@@ -1,6 +1,5 @@
 package hello.backend.ai.deepseek.service;
 
-import hello.backend.ai.deepseek.dto.PatitioningRequest;
 import hello.backend.video.dto.TextToVideoRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,8 +9,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -90,6 +91,78 @@ public class DeepSeekService {
         Map<String, Object> firstChoice = choices.get(0);
         Map<String, String> message = (Map<String, String>) firstChoice.get("message");
         return message.get("content");
+    }
+
+    // tts 전달 프롬프트 생성
+    public List<String> generateMultipleImageScripts(String userScript, int chunkCount) {
+        List<String> scripts = new ArrayList<>();
+
+        String[] sentenceChunks = userScript.split("[.!?\\n]\\s*");
+
+        List<String> validSentences = Arrays.stream(sentenceChunks)
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
+
+        List<String> adjustedChunks = new ArrayList<>();
+        int totalLength = validSentences.stream().mapToInt(String::length).sum();
+        int avgLengthPerChunk = Math.max(totalLength / chunkCount, 1);
+
+        StringBuilder currentChunk = new StringBuilder();
+        for (String sentence : validSentences) {
+            if (currentChunk.length() + sentence.length() < avgLengthPerChunk || adjustedChunks.size() + 1 == chunkCount) {
+                currentChunk.append(sentence).append(" ");
+            } else {
+                adjustedChunks.add(currentChunk.toString().trim());
+                currentChunk = new StringBuilder(sentence).append(" ");
+            }
+        }
+        if (currentChunk.length() > 0) {
+            adjustedChunks.add(currentChunk.toString().trim());
+        }
+
+        while (adjustedChunks.size() < chunkCount) {
+            adjustedChunks.add(adjustedChunks.get(adjustedChunks.size() - 1));
+        }
+
+        for (int i = 0; i < chunkCount; i++) {
+            String inspiration = adjustedChunks.get(i);
+            String prompt = """
+            Please write exactly one unique and creative voiceover script for an advertising video based on the sentence below.
+            - Theme: advertising (including public service announcements).
+            - The script must reflect a *different perspective or message* from others.
+            - Do not repeat similar phrases or sentence structures from previous outputs.
+            - Use emotional but authentic tone. Avoid exaggeration.
+            - Length: 1 to 2 sentences, about 5 seconds.
+            - Output only the final Korean script. No lists, no numbers, no explanations.
+            Sentence for inspiration:
+            """ + inspiration;
+
+            Map<String, Object> requestBody = Map.of(
+                    "model", model,
+                    "messages", List.of(Map.of(
+                            "role", "user",
+                            "content", prompt
+                    ))
+            );
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+            ResponseEntity<Map> response = restTemplate.exchange(apiUrl, HttpMethod.POST, entity, Map.class);
+
+            List<Map<String, Object>> choices = (List<Map<String, Object>>) response.getBody().get("choices");
+            Map<String, Object> firstChoice = choices.get(0);
+            Map<String, String> message = (Map<String, String>) firstChoice.get("message");
+
+            String content = message.get("content").split("\\n")[0].replaceAll("^\\d+\\.?\\s*", "").trim();
+            scripts.add(content);
+
+            log.info("Script " + (i + 1) + ": " + content);
+        }
+
+        return scripts;
     }
 
     //병렬 프롬프트 리라이팅
