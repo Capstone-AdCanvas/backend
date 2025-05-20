@@ -1,10 +1,11 @@
 package hello.backend.gcs.service;
 
 
+import com.google.api.gax.paging.Page;
 import com.google.auth.oauth2.GoogleCredentials;
-import com.google.cloud.storage.BlobInfo;
-import com.google.cloud.storage.Storage;
-import com.google.cloud.storage.StorageOptions;
+import com.google.cloud.storage.*;
+import hello.backend.error.ErrorCode;
+import hello.backend.error.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
@@ -18,6 +19,8 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -46,5 +49,44 @@ public class GCSService {
         storage.create(blobInfo, Files.readAllBytes(file.toPath()));
 
         return "https://storage.googleapis.com/" + bucketName + "/" + objectName;
+    }
+
+    // 이미지 저장
+    public String uploadToGCS(byte[] imageBytes, String userId, String subDir, String fileName, String contentType) {
+        String objectPath = "uploads/" + userId + "/" + subDir + "/" + fileName;
+        BlobInfo blobInfo = BlobInfo.newBuilder(bucketName, objectPath)
+                .setContentType(contentType)
+                .build();
+
+        storage.create(blobInfo, imageBytes);
+
+        return "https://storage.googleapis.com/" + bucketName + "/" + objectPath;
+    }
+
+    // 디렉토리 비우기
+    public void cleanUpDir(Long userId) {
+        String prefix = "uploads/" + userId + "/";
+        Page<Blob> blobs = storage.list(bucketName, Storage.BlobListOption.prefix(prefix));
+        List<BlobId> blobIdsToDelete = new ArrayList<>();
+
+        for (Blob blob : blobs.iterateAll()) {
+            String blobName = blob.getName();
+            if (blobName.startsWith("uploads/" + userId + "/final/") || blobName.startsWith("uploads/" + userId + "/logo/")) {
+                continue;
+            }
+            blobIdsToDelete.add(blob.getBlobId());
+        }
+
+        if (blobIdsToDelete.isEmpty()) {
+            throw new BusinessException(ErrorCode.IMAGE_NOT_FOUND);
+        }
+
+        List<Boolean> deleteResults = storage.delete(blobIdsToDelete);
+
+        for (int i = 0; i < deleteResults.size(); i++) {
+            if (!Boolean.TRUE.equals(deleteResults.get(i))) {
+                throw new BusinessException(ErrorCode.GCS_FILE_DELETE_FAILED);
+            }
+        }
     }
 }

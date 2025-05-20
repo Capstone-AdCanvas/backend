@@ -9,7 +9,6 @@ import hello.backend.user.domain.User;
 import hello.backend.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -18,14 +17,14 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class ImageLogoService {
 
     private final UserRepository userRepository;
-    private final FileStorageService fileStorageService;
+    private final ImageFileService ImageFileService;
     private final LogoRepository logoRepository;
 
     // 이미지 업로드 (로고)
-    @Transactional
     public LogoResponse uploadImage(Long userId, MultipartFile image) throws IOException {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
@@ -34,7 +33,7 @@ public class ImageLogoService {
             throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE);
         }
 
-        String savedFilePath = fileStorageService.saveFile(image, userId.toString(), "logo");
+        String savedFilePath = ImageFileService.saveFile(image, userId.toString(), "logo");
 
         Logo adLogo = Logo.builder()
                 .user(user)

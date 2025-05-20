@@ -2,8 +2,11 @@ package hello.backend.image.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.cloud.storage.Blob;
+import com.google.cloud.storage.Storage;
 import hello.backend.error.ErrorCode;
 import hello.backend.error.exception.BusinessException;
+import hello.backend.gcs.service.GCSService;
 import hello.backend.image.domain.Image;
 import hello.backend.image.domain.enums.ImageTheme;
 import hello.backend.image.dto.*;
@@ -32,21 +35,25 @@ import java.util.*;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class ImageBgService {
 
     private final ImageRepository imageRepository;
-    private final FileStorageService fileStorageService;
+    private final ImageFileService ImageFileService;
+    private final GCSService gcsService;
+
+    private final Storage storage;
+
+    @Value("${spring.cloud.gcp.storage.bucket}")
+    private String bucketName;
+
     @Qualifier("draphArtWebClient")
     private final WebClient draphArtWebClient;
 
     @Value("${DRAPH_ART_USERNAME}")
     private String USERNAME;
 
-    @Value("${file.temp-dir}")
-    private String tempDir;
-
     // 이미지 배경 제거
-    @Transactional
     public BgRemoveResponse removeBg(Long imageId) throws IOException {
         Image image = imageRepository.findById(imageId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
@@ -85,7 +92,7 @@ public class ImageBgService {
             String base64 = base64List.get(0);
             byte[] imageBytes = Base64.getDecoder().decode(base64);
 
-            String processedImageUrl = fileStorageService.saveBgRemoveFile(imageBytes, image.getUser().getId().toString(), image.getId(), "bgremove");
+            String processedImageUrl = ImageFileService.saveBgRemoveFile(imageBytes, image.getUser().getId().toString(), image.getId(), "bgremove");
             image.setProcessedImage(processedImageUrl);
             imageRepository.save(image);
 
@@ -97,7 +104,6 @@ public class ImageBgService {
     }
 
     // 배경 생성
-    @Transactional
     public List<BgGenerateResponse> generateBg(Long imageId, BgGenerateRequest request) throws IOException {
         Image image = imageRepository.findById(imageId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
@@ -141,7 +147,6 @@ public class ImageBgService {
     }
 
     // 배경 생성 (커스텀)
-    @Transactional
     public List<BgGenerateResponse> generateCustomBg(Long imageId, BgCustomGenerateRequest request) throws IOException {
         Image image = imageRepository.findById(imageId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
@@ -182,21 +187,32 @@ public class ImageBgService {
     }
 
     // 최종 이미지 선택
-    @Transactional
     public FinalImageResponse selectFinalImage(Long imageId, FinalImageRequest request) throws IOException {
         Image image = imageRepository.findById(imageId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
+
+        String fileUrl = request.getFileName();  // 전체 URL
+        String bucketUrlPrefix = "https://storage.googleapis.com/" + bucketName + "/";
+        if (!fileUrl.startsWith(bucketUrlPrefix)) {
+            throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE);
+        }
+        String objectPath = fileUrl.substring(bucketUrlPrefix.length());
+
+        Blob blob = storage.get(bucketName, objectPath);
+        if (blob == null || !blob.exists()) {
+            throw new BusinessException(ErrorCode.IMAGE_NOT_FOUND);
+        }
 
         Path tempFile = Files.createTempFile("final_", ".png");
         try (InputStream in = new URL(image.getProcessedImage()).openStream()) {
             Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
         }
 
-        String finalImageUrl = fileStorageService.chooseFinalImage(tempFile.toFile(), image.getUser().getId().toString(), image.getId(), "final");
+        String finalImageUrl = ImageFileService.chooseFinalImage(tempFile.toFile(), image.getUser().getId().toString(), imageId, "final");
         image.setFinalImage(finalImageUrl);
         imageRepository.save(image);
 
-        fileStorageService.cleanUpDir(image.getUser().getId());
+        gcsService.cleanUpDir(image.getUser().getId());
 
         return new FinalImageResponse(image.getId(), finalImageUrl);
     }
@@ -226,7 +242,7 @@ public class ImageBgService {
         for (int i = 0; i < base64List.size(); i++) {
             String base64 = base64List.get(i);
             try {
-                String outputImagePath = fileStorageService.saveBase64Image(base64, String.valueOf(userId),"temp-images");
+                String outputImagePath = ImageFileService.saveBase64Image(base64, String.valueOf(userId), "temp-images");
                 responseList.add(new BgGenerateResponse(outputImagePath));
             } catch (IllegalArgumentException e) {
                 throw new BusinessException(ErrorCode.DRAPH_ART_RESPONSE_PROCESSING_FAILED);

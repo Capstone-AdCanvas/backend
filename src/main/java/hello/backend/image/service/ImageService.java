@@ -13,7 +13,6 @@ import hello.backend.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -30,18 +29,11 @@ import java.util.List;
 @Transactional
 public class ImageService {
 
-    @Value("${file.final-dir}")
-    private String finalDir;
-
-    @Value("${file.final-url}")
-    private String finalUrl;
-
     private final ImageRepository imageRepository;
     private final UserRepository userRepository;
-    private final FileStorageService fileStorageService;
+    private final ImageFileService ImageFileService;
 
     // 이미지 업로드 (기본)
-    @Transactional
     public ImageResponse uploadImage(Long userId, MultipartFile image) throws IOException {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
@@ -50,7 +42,7 @@ public class ImageService {
             throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE);
         }
 
-        String savedFilePath = fileStorageService.saveFile(image, userId.toString(), "original");
+        String savedFilePath = ImageFileService.saveFile(image, userId.toString(), "original");
 
         Image adImage = Image.builder()
                 .user(user)
@@ -116,8 +108,7 @@ public class ImageService {
 
             g2d.dispose();
 
-            String finalImageUrl = fileStorageService.uploadCombinedImageToFinal(baseImage, image.getUser().getId(), image.getId());
-
+            String finalImageUrl = ImageFileService.uploadCombinedImageToFinal(baseImage, image.getUser().getId(), image.getId());
             image.setFinalImage(finalImageUrl);
             imageRepository.save(image);
 
