@@ -23,7 +23,13 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 @Slf4j
@@ -39,14 +45,8 @@ public class ImageBgService {
     @Value("${DRAPH_ART_USERNAME}")
     private String USERNAME;
 
-    @Value("${file.upload-dir}")
-    private String uploadDir;
-
     @Value("${file.bgremove-dir}")
     private String bgRemoveDir;
-
-    @Value("${file.bgremove-url}")
-    private String bgRemoveUrl;
 
     @Value("${file.temp-dir}")
     private String tempDir;
@@ -59,22 +59,20 @@ public class ImageBgService {
 
     // 이미지 배경 제거
     @Transactional
-    public BgRemoveResponse removeBg(Long imageId) throws JsonProcessingException {
+    public BgRemoveResponse removeBg(Long imageId) throws IOException {
         Image image = imageRepository.findById(imageId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
 
-        String uploadImagePath = image.getOriginalImage();
-        String fileNameOriginal = Paths.get(uploadImagePath).getFileName().toString();
-        String absoluteOriginalPath = Paths.get(uploadDir, fileNameOriginal).toString();
-
-        String processedFileName = String.format("processed_%d.png", image.getId());
-        String outputImagePath = Paths.get(bgRemoveDir, processedFileName).toString();
+        Path tempFile = Files.createTempFile("bg_input_", ".png");
+        try (InputStream in = new URL(image.getOriginalImage()).openStream()) {
+            Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
+        }
+        FileSystemResource fileResource = new FileSystemResource(tempFile.toFile());
 
         Map<String, Object> conceptOptionMap = new HashMap<>();
         conceptOptionMap.put("product_size", "auto");
         String conceptOptionJson = new ObjectMapper().writeValueAsString(conceptOptionMap);
 
-        FileSystemResource fileResource = new FileSystemResource(new File(absoluteOriginalPath));
         MultiValueMap<String, Object> formData = new LinkedMultiValueMap<>();
         formData.add("username", USERNAME);
         formData.add("gen_type", "remove_bg");
@@ -99,8 +97,8 @@ public class ImageBgService {
             String base64 = base64List.get(0);
             byte[] imageBytes = Base64.getDecoder().decode(base64);
 
-            fileStorageService.saveBgRemoveFile(imageBytes, outputImagePath);
-            image.setProcessedImage(bgRemoveUrl + processedFileName);
+            String processedImageUrl = fileStorageService.saveBgRemoveFile(imageBytes, image.getUser().getId().toString(), image.getId(), "bgremove");
+            image.setProcessedImage(processedImageUrl);
             imageRepository.save(image);
 
             return toBgRemoveResponse(image);

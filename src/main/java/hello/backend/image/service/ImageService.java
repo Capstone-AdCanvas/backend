@@ -43,7 +43,7 @@ public class ImageService {
     private final UserRepository userRepository;
     private final FileStorageService fileStorageService;
 
-    // 이미지 업로드
+    // 이미지 업로드 (기본)
     @Transactional
     public ImageResponse uploadImage(Long userId, MultipartFile image) throws IOException {
         User user = userRepository.findById(userId)

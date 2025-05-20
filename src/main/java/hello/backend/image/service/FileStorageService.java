@@ -45,12 +45,12 @@ public class FileStorageService {
 
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png");
 
-    // 이미지 저장 (업로드)
+    // 이미지 업로드
     @Transactional
     public String saveFile(MultipartFile image, String userId, String subDir) {
         try {
             String extension = getFileExtension(image.getOriginalFilename());
-            String newFileName = UUID.randomUUID().toString() + "." + extension;
+            String newFileName = UUID.randomUUID() + "." + extension;
             String objectPath = "uploads/" + subDir + "/" + userId + "/" + newFileName;
 
             BlobInfo blobInfo = BlobInfo.newBuilder(bucketName, objectPath)
@@ -66,44 +66,28 @@ public class FileStorageService {
 
             return "https://storage.googleapis.com/" + bucketName + "/" + objectPath;
         } catch (IOException e) {
-            throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE, "GCS 업로드 중 오류 발생");
-        }
-    }
-
-    // 로고 이미지 저장 (업로드)
-    @Transactional
-    public String saveLogoFile(MultipartFile image, String userId, String subDir) {
-        try {
-            String extension = getFileExtension(image.getOriginalFilename());
-            String newFileName = UUID.randomUUID().toString() + "." + extension;
-            String objectPath = "logo/" + subDir + "/" + userId + "/" + newFileName;
-
-            BlobInfo blobInfo = BlobInfo.newBuilder(bucketName, objectPath)
-                    .setContentType(image.getContentType())
-                    .build();
-
-            storage.create(blobInfo, image.getBytes());
-
-            storage.get(blobInfo.getBlobId()).toBuilder()
-                    .setAcl(List.of(Acl.of(Acl.User.ofAllUsers(), Acl.Role.READER)))
-                    .build()
-                    .update();
-
-            return "https://storage.googleapis.com/" + bucketName + "/" + objectPath;
-        } catch (IOException e) {
-            throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE, "GCS 업로드 중 오류 발생");
+            throw new BusinessException(ErrorCode.GCS_UPLOAD_FAILED);
         }
     }
 
     // 이미지 저장 (배경 제거)
     @Transactional
-    public void saveBgRemoveFile(byte[] imageBytes, String filePath) {
-        try {
-            ensureDirectoryExists(Paths.get(filePath).getParent().toString());
-            Files.write(Paths.get(filePath), imageBytes);
-        } catch (IOException e) {
-            throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE);
-        }
+    public String saveBgRemoveFile(byte[] imageBytes, String userId, Long imageId, String subDir) {
+        String fileName = "processed_" + imageId + ".png";
+        String objectPath = "uploads/" + subDir + "/" + userId + "/" + fileName;
+
+        BlobInfo blobInfo = BlobInfo.newBuilder(bucketName, objectPath)
+                .setContentType("image/png")
+                .build();
+
+        storage.create(blobInfo, imageBytes);
+
+        storage.get(blobInfo.getBlobId()).toBuilder()
+                .setAcl(List.of(Acl.of(Acl.User.ofAllUsers(), Acl.Role.READER)))
+                .build()
+                .update();
+
+        return "https://storage.googleapis.com/" + bucketName + "/" + objectPath;
     }
 
     // 파일 이동 (복사 후 원본 삭제)

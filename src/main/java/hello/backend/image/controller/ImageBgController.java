@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -29,7 +30,7 @@ public class ImageBgController {
             @ApiResponse(responseCode = "404", description = "이미지를 찾을 수 없음")
     })
     @PostMapping("/{imageId}/remove")
-    public ResponseEntity<BgRemoveResponse> removeBg(@PathVariable Long imageId) throws JsonProcessingException {
+    public ResponseEntity<BgRemoveResponse> removeBg(@PathVariable Long imageId) throws IOException {
         BgRemoveResponse response = imageBgService.removeBg(imageId);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }

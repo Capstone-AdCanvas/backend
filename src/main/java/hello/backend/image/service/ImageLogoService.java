@@ -24,7 +24,7 @@ public class ImageLogoService {
     private final FileStorageService fileStorageService;
     private final LogoRepository logoRepository;
 
-    // 이미지 업로드
+    // 이미지 업로드 (로고)
     @Transactional
     public LogoResponse uploadImage(Long userId, MultipartFile image) throws IOException {
         User user = userRepository.findById(userId)
@@ -34,7 +34,7 @@ public class ImageLogoService {
             throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE);
         }
 
-        String savedFilePath = fileStorageService.saveLogoFile(image, userId.toString(), "logo");
+        String savedFilePath = fileStorageService.saveFile(image, userId.toString(), "logo");
 
         Logo adLogo = Logo.builder()
                 .user(user)
