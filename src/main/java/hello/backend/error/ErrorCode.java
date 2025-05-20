@@ -45,8 +45,10 @@ public enum ErrorCode {
     CLOVA_TTS_SENTENCE_TOO_LONG(HttpStatus.BAD_REQUEST, "TTS_VS18", "문장당 최대 길이(200자) 초과"),
     CLOVA_TTS_UNSUPPORTED_EMOTION_STRENGTH(HttpStatus.BAD_REQUEST, "TTS_VS19", "입력된 감정 강도(emotion-strength) 파라미터 값을 지원하지 않음"),
     CLOVA_TTS_FAILED(HttpStatus.BAD_REQUEST, "TTS_VS26", "TTS 생성 실패"),
-    CLOVA_TTS_INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "TTS_VS99", "CLOVA TTS 서버 내부 오류입니다.");
+    CLOVA_TTS_INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "TTS_VS99", "CLOVA TTS 서버 내부 오류입니다."),
 
+    // VIDEO
+    VIDEO_DUPLICATE_NAME(HttpStatus.BAD_REQUEST, "VID_VS01", "이미 존재하는 영상 이름입니다.");
     private final HttpStatus httpStatus;
     private final String code;
     private final String message;
