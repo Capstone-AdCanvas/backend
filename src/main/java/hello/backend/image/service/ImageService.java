@@ -53,7 +53,7 @@ public class ImageService {
             throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE);
         }
 
-        String savedFilePath = fileStorageService.saveFile(image);
+        String savedFilePath = fileStorageService.saveFile(image, userId.toString(), "original");
 
         Image adImage = Image.builder()
                 .user(user)

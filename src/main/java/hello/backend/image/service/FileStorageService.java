@@ -1,5 +1,8 @@
 package hello.backend.image.service;
 
+import com.google.cloud.storage.Acl;
+import com.google.cloud.storage.BlobInfo;
+import com.google.cloud.storage.Storage;
 import hello.backend.error.ErrorCode;
 import hello.backend.error.exception.BusinessException;
 import jakarta.transaction.Transactional;
@@ -14,6 +17,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Base64;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -22,11 +26,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class FileStorageService {
 
-    @Value("${file.upload-dir}")
-    private String uploadDir;
+    private final Storage storage;
 
-    @Value("${file.upload-url}")
-    private String uploadUrl;
+    @Value("${spring.cloud.gcp.storage.bucket}")
+    private String bucketName;
 
     @Value("${file.temp-dir}")
     private String tempDir;
@@ -44,55 +47,51 @@ public class FileStorageService {
 
     // 이미지 저장 (업로드)
     @Transactional
-    public String saveFile(MultipartFile image) {
+    public String saveFile(MultipartFile image, String userId, String subDir) {
         try {
-            ensureDirectoryExists(uploadDir);
-
             String extension = getFileExtension(image.getOriginalFilename());
             String newFileName = UUID.randomUUID().toString() + "." + extension;
-            String filePath = uploadDir + File.separator + newFileName;
+            String objectPath = "uploads/" + subDir + "/" + userId + "/" + newFileName;
 
-            File dest = new File(filePath);
+            BlobInfo blobInfo = BlobInfo.newBuilder(bucketName, objectPath)
+                    .setContentType(image.getContentType())
+                    .build();
 
-            File parentDir = dest.getParentFile();
-            if (!parentDir.canWrite()) {
-                boolean permissionGranted = parentDir.setWritable(true);
-                if (!permissionGranted) {
-                    throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE, "디렉토리에 쓰기 권한 설정 실패");
-                }
-            }
+            storage.create(blobInfo, image.getBytes());
 
-            image.transferTo(dest);
-            if (!dest.exists() || dest.length() == 0) {
-                throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE, "파일 저장에 실패했습니다.");
-            }
+            storage.get(blobInfo.getBlobId()).toBuilder()
+                    .setAcl(List.of(Acl.of(Acl.User.ofAllUsers(), Acl.Role.READER)))
+                    .build()
+                    .update();
 
-            return uploadUrl + newFileName;
+            return "https://storage.googleapis.com/" + bucketName + "/" + objectPath;
         } catch (IOException e) {
-            throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE, "파일 업로드 중 오류 발생");
+            throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE, "GCS 업로드 중 오류 발생");
         }
     }
 
     // 로고 이미지 저장 (업로드)
     @Transactional
-    public String saveLogoFile(MultipartFile image) {
+    public String saveLogoFile(MultipartFile image, String userId, String subDir) {
         try {
-            ensureDirectoryExists(logoPath);
-
             String extension = getFileExtension(image.getOriginalFilename());
             String newFileName = UUID.randomUUID().toString() + "." + extension;
-            String filePath = logoPath + File.separator + newFileName;
+            String objectPath = "logo/" + subDir + "/" + userId + "/" + newFileName;
 
-            File dest = new File(filePath);
-            image.transferTo(dest);
+            BlobInfo blobInfo = BlobInfo.newBuilder(bucketName, objectPath)
+                    .setContentType(image.getContentType())
+                    .build();
 
-            if (!Files.exists(dest.toPath())) {
-                throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE);
-            }
+            storage.create(blobInfo, image.getBytes());
 
-            return logoUrl + newFileName;
+            storage.get(blobInfo.getBlobId()).toBuilder()
+                    .setAcl(List.of(Acl.of(Acl.User.ofAllUsers(), Acl.Role.READER)))
+                    .build()
+                    .update();
+
+            return "https://storage.googleapis.com/" + bucketName + "/" + objectPath;
         } catch (IOException e) {
-            throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE);
+            throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE, "GCS 업로드 중 오류 발생");
         }
     }
 
