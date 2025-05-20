@@ -12,7 +12,13 @@ java {
         languageVersion = JavaLanguageVersion.of(17)
     }
 }
+tasks.named('processResources') {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
+    from('src/main/resources') {
+        include 'project-adcanvas-7198154f5844.json'
+    }
+}
 repositories {
     mavenCentral()
 }
@@ -37,6 +43,10 @@ dependencies {
     implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
     //ffmpeg 설정
     implementation "net.bramp.ffmpeg:ffmpeg:0.7.0"
+    //gcs
+    implementation group: 'org.springframework.cloud', name: 'spring-cloud-gcp-starter', version: '1.2.5.RELEASE'
+    implementation group: 'org.springframework.cloud', name: 'spring-cloud-gcp-storage', version: '1.2.5.RELEASE'
+    implementation 'com.google.auth:google-auth-library-oauth2-http:1.18.0'
 
 }
 
