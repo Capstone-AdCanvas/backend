@@ -1,6 +1,5 @@
 package hello.backend.image.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import hello.backend.image.dto.*;
 import hello.backend.image.service.ImageBgService;
 import hello.backend.image.service.ImageThemeService;

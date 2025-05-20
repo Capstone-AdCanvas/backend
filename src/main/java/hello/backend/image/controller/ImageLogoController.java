@@ -1,6 +1,5 @@
 package hello.backend.image.controller;
 
-import hello.backend.image.dto.ImageResponse;
 import hello.backend.image.dto.LogoResponse;
 import hello.backend.image.service.ImageLogoService;
 import io.swagger.v3.oas.annotations.Operation;

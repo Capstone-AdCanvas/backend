@@ -11,6 +11,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -25,9 +28,6 @@ public class FileStorageService {
 
     @Value("${spring.cloud.gcp.storage.bucket}")
     private String bucketName;
-
-    @Value("${file.temp-dir}")
-    private String tempDir;
 
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png");
 
@@ -44,11 +44,6 @@ public class FileStorageService {
                     .build();
 
             storage.create(blobInfo, image.getBytes());
-
-            storage.get(blobInfo.getBlobId()).toBuilder()
-                    .setAcl(List.of(Acl.of(Acl.User.ofAllUsers(), Acl.Role.READER)))
-                    .build()
-                    .update();
 
             return "https://storage.googleapis.com/" + bucketName + "/" + objectPath;
         } catch (IOException e) {
@@ -68,11 +63,6 @@ public class FileStorageService {
 
         storage.create(blobInfo, imageBytes);
 
-        storage.get(blobInfo.getBlobId()).toBuilder()
-                .setAcl(List.of(Acl.of(Acl.User.ofAllUsers(), Acl.Role.READER)))
-                .build()
-                .update();
-
         return "https://storage.googleapis.com/" + bucketName + "/" + objectPath;
     }
 
@@ -89,11 +79,6 @@ public class FileStorageService {
                     .build();
 
             storage.create(blobInfo, imageBytes);
-
-            storage.get(blobInfo.getBlobId()).toBuilder()
-                    .setAcl(List.of(Acl.of(Acl.User.ofAllUsers(), Acl.Role.READER)))
-                    .build()
-                    .update();
 
             return "https://storage.googleapis.com/" + bucketName + "/" + objectPath;
         } catch (IllegalArgumentException e) {
@@ -114,10 +99,6 @@ public class FileStorageService {
                     .build();
 
             storage.create(blobInfo, imageBytes);
-            storage.get(blobInfo.getBlobId()).toBuilder()
-                    .setAcl(List.of(Acl.of(Acl.User.ofAllUsers(), Acl.Role.READER)))
-                    .build()
-                    .update();
 
             return "https://storage.googleapis.com/" + bucketName + "/" + objectPath;
         } catch (IOException e) {
@@ -125,6 +106,7 @@ public class FileStorageService {
         }
     }
 
+    // 디렉토리 비우기
     public void cleanUpDir(Long userId) {
         String prefix = "uploads/" + userId + "/";
         Page<Blob> blobs = storage.list(bucketName, Storage.BlobListOption.prefix(prefix));
@@ -145,6 +127,25 @@ public class FileStorageService {
                 String failedFile = blobIdsToDelete.get(i).getName();
                 throw new BusinessException(ErrorCode.GCS_FILE_DELETE_FAILED, "삭제 실패한 파일: " + failedFile);
             }
+        }
+    }
+
+    public String uploadCombinedImageToFinal(BufferedImage image, Long userId, Long imageId) {
+        try {
+            String objectPath = "uploads/" + userId + "/final/final_" + imageId + ".png";
+            BlobInfo blobInfo = BlobInfo.newBuilder(bucketName, objectPath)
+                    .setContentType("image/png")
+                    .build();
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ImageIO.write(image, "png", baos);
+            byte[] imageBytes = baos.toByteArray();
+
+            storage.create(blobInfo, imageBytes); // 비공개로 덮어쓰기
+
+            return "https://storage.googleapis.com/" + bucketName + "/" + objectPath;
+        } catch (IOException e) {
+            throw new BusinessException(ErrorCode.GCS_UPLOAD_FAILED);
         }
     }
 
