@@ -50,6 +50,7 @@ public enum ErrorCode {
 
     // GCS
     GCS_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "GCS_VS01", "GCS 업로드 실패"),
+    GCS_FILE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "GCS_FILE_DELETE_FAILED", "GCS 파일 삭제 실패"),
     STORAGE_SERVICE_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "GCS_VS02", "스토리지 서비스 오류"),
 
     // VIDEO

@@ -45,17 +45,8 @@ public class ImageBgService {
     @Value("${DRAPH_ART_USERNAME}")
     private String USERNAME;
 
-    @Value("${file.bgremove-dir}")
-    private String bgRemoveDir;
-
     @Value("${file.temp-dir}")
     private String tempDir;
-
-    @Value("${file.final-dir}")
-    private String finalDir;
-
-    @Value("${file.final-url}")
-    private String finalUrl;
 
     // 이미지 배경 제거
     @Transactional
@@ -195,23 +186,21 @@ public class ImageBgService {
 
     // 최종 이미지 선택
     @Transactional
-    public FinalImageResponse selectFinalImage(Long imageId, FinalImageRequest request) {
+    public FinalImageResponse selectFinalImage(Long imageId, FinalImageRequest request) throws IOException {
         Image image = imageRepository.findById(imageId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
 
-        File tempFile = new File(tempDir, request.getFileName());
-        log.info("생성파일: {}", tempFile);
-        String fileName = "final_" + imageId + ".png";
-        File finalFile = new File(finalDir, fileName);
-        log.info("최종파일: {}", finalFile);
+        Path tempFile = Files.createTempFile("final_", ".png");
+        try (InputStream in = new URL(image.getProcessedImage()).openStream()) {
+            Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
+        }
 
-        fileStorageService.moveFile(tempFile, finalFile);
-        log.info("파일 이동 완료: {} -> {}", tempFile.getAbsolutePath(), finalFile.getAbsolutePath());
-        fileStorageService.cleanUpTempDir();
-
-        String finalImageUrl = finalUrl + fileName;
+        String finalImageUrl = fileStorageService.chooseFinalImage(tempFile.toFile(), image.getUser().getId().toString(), image.getId(), "final");
         image.setFinalImage(finalImageUrl);
         imageRepository.save(image);
+
+        fileStorageService.cleanUpDir(image.getUser().getId());
+
         return new FinalImageResponse(image.getId(), finalImageUrl);
     }
 

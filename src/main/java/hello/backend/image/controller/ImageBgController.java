@@ -84,7 +84,7 @@ public class ImageBgController {
     public ResponseEntity<FinalImageResponse> selectFinalImage(
             @PathVariable Long imageId,
             @RequestBody FinalImageRequest request
-    ){
+    ) throws IOException {
         FinalImageResponse response = imageBgService.selectFinalImage(imageId, request);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
