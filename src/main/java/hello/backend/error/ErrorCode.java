@@ -27,6 +27,7 @@ public enum ErrorCode {
     INVALID_IMAGE_THEME(HttpStatus.NOT_FOUND, "IMAGE_THEME_404", "유효하지 않은 테마입니다."),
     INVALID_IMAGE_FILE(HttpStatus.BAD_REQUEST, "IMAGE_400", "잘못된 이미지 파일입니다."),
     UNSUPPORTED_IMAGE_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "IMAGE_415", "지원하지 않는 이미지 형식입니다."),
+    IMAGE_COMBINE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "IMAGE_COMBINE_500", "이미지 합성에 실패했습니다."),
 
     // DRAPH_ART
     DRAPH_ART_INVALID_INPUT(HttpStatus.BAD_REQUEST, "DRAPH_ART_400", "드랩아트 요청이 올바르지 않습니다."),
