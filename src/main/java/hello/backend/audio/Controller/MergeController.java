@@ -1,6 +1,5 @@
 package hello.backend.audio.Controller;
 
-import hello.backend.audio.dto.MergeRequest;
 import hello.backend.audio.service.AudioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
