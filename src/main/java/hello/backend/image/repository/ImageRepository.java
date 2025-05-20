@@ -7,4 +7,6 @@ import java.util.*;
 
 public interface ImageRepository extends JpaRepository<Image, Long> {
     List<Image> findAllByUserId(Long user_id);
+    Optional<Image> findByFinalImage(String finalImage);
+    Image findFirstById(Long id);
 }
