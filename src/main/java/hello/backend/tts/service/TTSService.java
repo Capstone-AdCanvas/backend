@@ -12,11 +12,17 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 @Service
 public class TTSService {
@@ -37,19 +43,27 @@ public class TTSService {
                 .collect(Collectors.toList());
     }
 
-    // tts 변환
-    public byte[] getTtsAudio(TTSRequest ttsRequest) {
-        String transformedText = deepSeekService.imageTransFormScript(ttsRequest.getText());
+    public Mono<List<byte[]>> getTtsAudioListAsync(TTSRequest ttsRequest) {
 
+        int chunkCount = ttsRequest.getSecond() / 5;
+        List<String> chunks = deepSeekService.generateMultipleImageScripts(ttsRequest.getText(), chunkCount);
+        List<Mono<byte[]>> audioRequests = chunks.stream()
+                .map(chunkText -> sendTtsRequest(chunkText, ttsRequest))
+                .collect(Collectors.toList());
+
+        return Flux.merge(audioRequests).collectList();
+    }
+
+    private Mono<byte[]> sendTtsRequest(String chunkText, TTSRequest originalRequest) {
         return clovaTtsWebClient.post()
                 .uri("/tts")
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body(BodyInserters.fromFormData("speaker", ttsRequest.getSpeaker())
-                        .with("text", ttsRequest.getText())
-                        .with("emotion", String.valueOf(ttsRequest.getEmotion()))
-                        .with("emotion-strength", String.valueOf(ttsRequest.getEmotionStrength()))
-                        .with("speed", String.valueOf(ttsRequest.getSpeed())))
-                        .retrieve()
+                .body(BodyInserters.fromFormData("speaker", originalRequest.getSpeaker())
+                        .with("text", chunkText)
+                        .with("emotion", String.valueOf(originalRequest.getEmotion()))
+                        .with("emotion-strength", String.valueOf(originalRequest.getEmotionStrength()))
+                        .with("speed", String.valueOf(-1)))
+                .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError, response ->
                         response.bodyToMono(String.class)
                                 .map(TTSService::extractClovaErrorCode)
@@ -59,8 +73,22 @@ public class TTSService {
                 .onStatus(HttpStatusCode::is5xxServerError, response ->
                         Mono.error(new BusinessException(ErrorCode.CLOVA_TTS_INTERNAL_ERROR))
                 )
-                .bodyToMono(byte[].class)
-                .block();
+                .bodyToMono(byte[].class);
+    }
+
+    public byte[] zipAudioFiles(List<byte[]> audioList) {
+        try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+             ZipOutputStream zipOut = new ZipOutputStream(byteArrayOutputStream)) {
+            for (int i = 0; i < audioList.size(); i++) {
+                zipOut.putNextEntry(new ZipEntry("speech_" + i + ".mp3"));
+                zipOut.write(audioList.get(i));
+                zipOut.closeEntry();
+            }
+            zipOut.finish();
+            return byteArrayOutputStream.toByteArray();
+        } catch (IOException e) {
+            throw new RuntimeException("ZIP 생성 실패", e);
+        }
     }
 
     private static ErrorCode extractClovaErrorCode(String body) {

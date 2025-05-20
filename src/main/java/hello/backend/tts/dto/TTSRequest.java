@@ -12,5 +12,5 @@ public class TTSRequest {
     private String text;
     private int emotion;
     private int emotionStrength;
-    private int speed;
+    private int second;
 }

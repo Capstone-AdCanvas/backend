@@ -11,6 +11,7 @@ import com.google.gson.JsonObject;
 import hello.backend.ai.deepseek.service.DeepSeekService;
 import hello.backend.error.ErrorCode;
 import hello.backend.error.exception.BusinessException;
+import hello.backend.gcs.service.GCSService;
 import hello.backend.user.domain.User;
 import hello.backend.user.repository.UserRepository;
 import hello.backend.video.domain.Video;
@@ -21,11 +22,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ai.fal.client.exception.FalException;
+
+import java.io.File;
+import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -38,6 +39,7 @@ public class VideoService {
     private final DeepSeekService deepSeekService;
     private final Cache<String, TextToVideoRequest> requestTextCache;
     private final Cache<String, ImageToVideoRequest> requestImageCache;
+    private final GCSService gcsService;
 
     //text-to-video(kling 모델)병렬 생성 - 비동기 큐
     @Transactional
@@ -216,13 +218,21 @@ public class VideoService {
     //--------------------------------------------------------------------------------------------------
     //video 저장
     @Transactional
-    public SaveResponse saveVideo(Long userId, SaveRequest request) {
+    public SaveResponse saveVideo(Long userId, SaveRequest request) throws IOException {
+
+        File downloadedFile = gcsService.downloadVideoFromUrl(request.getVideoUrl(), UUID.randomUUID() + ".mp4");
+        String gcsUrl = gcsService.upload(downloadedFile, userId.toString(), "videos");
+
         User user = userRepository.findById(userId)
                 .orElseThrow(()->new BusinessException(ErrorCode.USER_NOT_FOUND));
 
+        if (videoRepository.existsByName(request.getName())) {
+            throw new BusinessException(ErrorCode.VIDEO_DUPLICATE_NAME);
+        }
+
         Video video = Video.builder()
                 .name(request.getName())
-                .finalVideo(request.getVideoUrl())
+                .finalVideo(gcsUrl)
                 .aspectRatio(request.getAspectRatio())
                 .duration(request.getDuration())
                 .createAt(request.getCreatedAt())
@@ -234,7 +244,7 @@ public class VideoService {
         return SaveResponse.builder()
                 .userId(userId)
                 .name(request.getName())
-                .videoUrl(request.getVideoUrl())
+                .videoUrl(gcsUrl)
                 .aspectRatio(request.getAspectRatio())
                 .duration(request.getDuration())
                 .createdAt(request.getCreatedAt())
