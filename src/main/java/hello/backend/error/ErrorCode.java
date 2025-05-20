@@ -48,6 +48,11 @@ public enum ErrorCode {
     CLOVA_TTS_FAILED(HttpStatus.BAD_REQUEST, "TTS_VS26", "TTS 생성 실패"),
     CLOVA_TTS_INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "TTS_VS99", "CLOVA TTS 서버 내부 오류입니다."),
 
+    // GCS
+    GCS_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "GCS_VS01", "GCS 업로드 실패"),
+    GCS_FILE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "GCS_FILE_DELETE_FAILED", "GCS 파일 삭제 실패"),
+    STORAGE_SERVICE_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "GCS_VS02", "스토리지 서비스 오류"),
+
     // VIDEO
     VIDEO_DUPLICATE_NAME(HttpStatus.BAD_REQUEST, "VID_VS01", "이미 존재하는 영상 이름입니다."),
     VIDEO_URL_NOT_FOUND(HttpStatus.NOT_FOUND, "VIDEO_URL_404", "비디오 url을 찾을 수 없습니다."),

@@ -13,19 +13,15 @@ import hello.backend.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -33,18 +29,11 @@ import java.util.UUID;
 @Transactional
 public class ImageService {
 
-    @Value("${file.final-dir}")
-    private String finalDir;
-
-    @Value("${file.final-url}")
-    private String finalUrl;
-
     private final ImageRepository imageRepository;
     private final UserRepository userRepository;
-    private final FileStorageService fileStorageService;
+    private final ImageFileService ImageFileService;
 
-    // 이미지 업로드
-    @Transactional
+    // 이미지 업로드 (기본)
     public ImageResponse uploadImage(Long userId, MultipartFile image) throws IOException {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
@@ -53,7 +42,7 @@ public class ImageService {
             throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE);
         }
 
-        String savedFilePath = fileStorageService.saveFile(image);
+        String savedFilePath = ImageFileService.saveFile(image, userId.toString(), "original");
 
         Image adImage = Image.builder()
                 .user(user)
@@ -97,23 +86,19 @@ public class ImageService {
     public CombineImageResponse combineImage(CombineImageRequest request) {
         Image image = imageRepository.findByFinalImage(request.getBaseImage())
                 .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
-        try {
-            BufferedImage baseImage = ImageIO.read(new File(finalDir + request.getBaseImage()));
-            Graphics2D g2d = baseImage.createGraphics();
 
+        try {
+            BufferedImage baseImage = ImageIO.read(new URL(image.getFinalImage()));
+            Graphics2D g2d = baseImage.createGraphics();
             g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-            List<OverlayItemRequest> overlays = request.getOverlays();
-            for (OverlayItemRequest overlay : overlays) {
+            for (OverlayItemRequest overlay : request.getOverlays()) {
                 if ("logo".equalsIgnoreCase(overlay.getType())) {
                     BufferedImage logoImage = ImageIO.read(new URL(overlay.getImageUrl()));
-
                     int logoWidth = (int) (logoImage.getWidth() * overlay.getScale());
                     int logoHeight = (int) (logoImage.getHeight() * overlay.getScale());
-
                     java.awt.Image scaledLogo = logoImage.getScaledInstance(logoWidth, logoHeight, java.awt.Image.SCALE_SMOOTH);
                     g2d.drawImage(scaledLogo, overlay.getX(), overlay.getY(), logoWidth, logoHeight, null);
-
                 } else if ("text".equalsIgnoreCase(overlay.getType())) {
                     g2d.setFont(new Font(overlay.getFont(), Font.PLAIN, overlay.getSize()));
                     g2d.setColor(Color.decode(overlay.getColor()));
@@ -123,14 +108,11 @@ public class ImageService {
 
             g2d.dispose();
 
-            String filename = "combined_" + UUID.randomUUID() + ".jpg";
-            String savePath = finalUrl + filename;
-            ImageIO.write(baseImage, "jpg", new File(savePath));
-
-            image.setFinalImage(filename);
+            String finalImageUrl = ImageFileService.uploadCombinedImageToFinal(baseImage, image.getUser().getId(), image.getId());
+            image.setFinalImage(finalImageUrl);
             imageRepository.save(image);
 
-            return new CombineImageResponse(image.getId(), filename);
+            return new CombineImageResponse(image.getId(), finalImageUrl);
 
         } catch (Exception e) {
             throw new BusinessException(ErrorCode.IMAGE_COMBINE_FAILED);

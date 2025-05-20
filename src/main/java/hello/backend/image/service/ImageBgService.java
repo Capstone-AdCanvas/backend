@@ -1,10 +1,12 @@
 package hello.backend.image.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.cloud.storage.Blob;
+import com.google.cloud.storage.Storage;
 import hello.backend.error.ErrorCode;
 import hello.backend.error.exception.BusinessException;
+import hello.backend.gcs.service.GCSService;
 import hello.backend.image.domain.Image;
 import hello.backend.image.domain.enums.ImageTheme;
 import hello.backend.image.dto.*;
@@ -22,59 +24,50 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.io.File;
-import java.nio.file.Paths;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class ImageBgService {
 
     private final ImageRepository imageRepository;
-    private final FileStorageService fileStorageService;
+    private final ImageFileService ImageFileService;
+    private final GCSService gcsService;
+
+    private final Storage storage;
+
+    @Value("${spring.cloud.gcp.storage.bucket}")
+    private String bucketName;
+
     @Qualifier("draphArtWebClient")
     private final WebClient draphArtWebClient;
 
     @Value("${DRAPH_ART_USERNAME}")
     private String USERNAME;
 
-    @Value("${file.upload-dir}")
-    private String uploadDir;
-
-    @Value("${file.bgremove-dir}")
-    private String bgRemoveDir;
-
-    @Value("${file.bgremove-url}")
-    private String bgRemoveUrl;
-
-    @Value("${file.temp-dir}")
-    private String tempDir;
-
-    @Value("${file.final-dir}")
-    private String finalDir;
-
-    @Value("${file.final-url}")
-    private String finalUrl;
-
     // 이미지 배경 제거
-    @Transactional
-    public BgRemoveResponse removeBg(Long imageId) throws JsonProcessingException {
+    public BgRemoveResponse removeBg(Long imageId) throws IOException {
         Image image = imageRepository.findById(imageId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
 
-        String uploadImagePath = image.getOriginalImage();
-        String fileNameOriginal = Paths.get(uploadImagePath).getFileName().toString();
-        String absoluteOriginalPath = Paths.get(uploadDir, fileNameOriginal).toString();
-
-        String processedFileName = String.format("processed_%d.png", image.getId());
-        String outputImagePath = Paths.get(bgRemoveDir, processedFileName).toString();
+        Path tempFile = Files.createTempFile("bg_input_", ".png");
+        try (InputStream in = new URL(image.getOriginalImage()).openStream()) {
+            Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
+        }
+        FileSystemResource fileResource = new FileSystemResource(tempFile.toFile());
 
         Map<String, Object> conceptOptionMap = new HashMap<>();
         conceptOptionMap.put("product_size", "auto");
         String conceptOptionJson = new ObjectMapper().writeValueAsString(conceptOptionMap);
 
-        FileSystemResource fileResource = new FileSystemResource(new File(absoluteOriginalPath));
         MultiValueMap<String, Object> formData = new LinkedMultiValueMap<>();
         formData.add("username", USERNAME);
         formData.add("gen_type", "remove_bg");
@@ -99,8 +92,8 @@ public class ImageBgService {
             String base64 = base64List.get(0);
             byte[] imageBytes = Base64.getDecoder().decode(base64);
 
-            fileStorageService.saveBgRemoveFile(imageBytes, outputImagePath);
-            image.setProcessedImage(bgRemoveUrl + processedFileName);
+            String processedImageUrl = ImageFileService.saveBgRemoveFile(imageBytes, image.getUser().getId().toString(), image.getId(), "bgremove");
+            image.setProcessedImage(processedImageUrl);
             imageRepository.save(image);
 
             return toBgRemoveResponse(image);
@@ -111,14 +104,14 @@ public class ImageBgService {
     }
 
     // 배경 생성
-    @Transactional
-    public List<BgGenerateResponse> generateBg(Long imageId, BgGenerateRequest request) throws JsonProcessingException {
+    public List<BgGenerateResponse> generateBg(Long imageId, BgGenerateRequest request) throws IOException {
         Image image = imageRepository.findById(imageId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
 
-        String uploadImagePath = image.getProcessedImage();
-        String fileName = Paths.get(uploadImagePath).getFileName().toString();
-        String actualPath = Paths.get(bgRemoveDir, fileName).toString();
+        Path tempFile = Files.createTempFile("bg_processed_", ".png");
+        try (InputStream in = new URL(image.getProcessedImage()).openStream()) {
+            Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
+        }
 
         ImageTheme theme = Arrays.stream(ImageTheme.values())
                 .filter(t -> t.name().equalsIgnoreCase(request.getConcept_option()))
@@ -134,7 +127,7 @@ public class ImageBgService {
 
         log.info("전송된 concept_option JSON: {}", conceptOptionJson);
 
-        FileSystemResource fileResource = new FileSystemResource(new File(actualPath));
+        FileSystemResource fileResource = new FileSystemResource(tempFile.toFile());
         MultiValueMap<String, Object> formData = new LinkedMultiValueMap<>();
         formData.add("image", fileResource);
         formData.add("username", USERNAME);
@@ -150,18 +143,18 @@ public class ImageBgService {
                 .bodyToMono(String.class)
                 .block();
 
-        return handleBgGenerateResponse(jsonResponse);
+        return handleBgGenerateResponse(jsonResponse, image.getUser().getId());
     }
 
     // 배경 생성 (커스텀)
-    @Transactional
-    public List<BgGenerateResponse> generateCustomBg(Long imageId, BgCustomGenerateRequest request) throws JsonProcessingException {
+    public List<BgGenerateResponse> generateCustomBg(Long imageId, BgCustomGenerateRequest request) throws IOException {
         Image image = imageRepository.findById(imageId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
 
-        String uploadImagePath = image.getProcessedImage();
-        String fileName = Paths.get(uploadImagePath).getFileName().toString();
-        String actualPath = Paths.get(tempDir, fileName).toString();
+        Path tempFile = Files.createTempFile("bg_processed_", ".png");
+        try (InputStream in = new URL(image.getProcessedImage()).openStream()) {
+            Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
+        }
         String prompt = request.getCustomPrompt();
 
         ObjectMapper objectMapper = new ObjectMapper();
@@ -174,7 +167,7 @@ public class ImageBgService {
 
         log.info("전송된 concept_option JSON: {}", conceptOptionJson);
 
-        FileSystemResource fileResource = new FileSystemResource(new File(actualPath));
+        FileSystemResource fileResource = new FileSystemResource(tempFile.toFile());
         MultiValueMap<String, Object> formData = new LinkedMultiValueMap<>();
         formData.add("image", fileResource);
         formData.add("username", USERNAME);
@@ -190,36 +183,44 @@ public class ImageBgService {
                 .bodyToMono(String.class)
                 .block();
 
-        return handleBgGenerateResponse(jsonResponse);
+        return handleBgGenerateResponse(jsonResponse, image.getUser().getId());
     }
 
     // 최종 이미지 선택
-    @Transactional
-    public FinalImageResponse selectFinalImage(Long imageId, FinalImageRequest request) {
+    public FinalImageResponse selectFinalImage(Long imageId, FinalImageRequest request) throws IOException {
         Image image = imageRepository.findById(imageId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
 
-        File tempFile = new File(tempDir, request.getFileName());
-        log.info("생성파일: {}", tempFile);
-        String fileName = "final_" + imageId + ".png";
-        File finalFile = new File(finalDir, fileName);
-        log.info("최종파일: {}", finalFile);
+        String fileUrl = request.getFileName();  // 전체 URL
+        String bucketUrlPrefix = "https://storage.googleapis.com/" + bucketName + "/";
+        if (!fileUrl.startsWith(bucketUrlPrefix)) {
+            throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE);
+        }
+        String objectPath = fileUrl.substring(bucketUrlPrefix.length());
 
-        fileStorageService.moveFile(tempFile, finalFile);
-        log.info("파일 이동 완료: {} -> {}", tempFile.getAbsolutePath(), finalFile.getAbsolutePath());
-        fileStorageService.cleanUpTempDir();
+        Blob blob = storage.get(bucketName, objectPath);
+        if (blob == null || !blob.exists()) {
+            throw new BusinessException(ErrorCode.IMAGE_NOT_FOUND);
+        }
 
-        String finalImageUrl = finalUrl + fileName;
+        Path tempFile = Files.createTempFile("final_", ".png");
+        try (InputStream in = new URL(image.getProcessedImage()).openStream()) {
+            Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
+        }
+
+        String finalImageUrl = ImageFileService.chooseFinalImage(tempFile.toFile(), image.getUser().getId().toString(), imageId, "final");
         image.setFinalImage(finalImageUrl);
         imageRepository.save(image);
+
+        gcsService.cleanUpDir(image.getUser().getId());
+
         return new FinalImageResponse(image.getId(), finalImageUrl);
     }
 
     // 생성된 이미지 저장
     @Transactional
-    public List<BgGenerateResponse> handleBgGenerateResponse(String jsonResponse) {
+    public List<BgGenerateResponse> handleBgGenerateResponse(String jsonResponse, Long userId) {
         if (jsonResponse == null || jsonResponse.isEmpty()) {
-            log.error("API 응답이 비어 있음");
             throw new BusinessException(ErrorCode.DRAPH_ART_EMPTY_RESPONSE);
         }
 
@@ -228,14 +229,11 @@ public class ImageBgService {
 
         try {
             base64List = objectMapper.readValue(jsonResponse, new TypeReference<List<String>>() {});
-            log.info("JSON 배열로 파싱된 Base64 리스트 크기: {}", base64List.size());
         } catch (Exception e) {
-            log.error("JSON 파싱 실패: 응답이 예상한 포맷이 아님", e);
             throw new BusinessException(ErrorCode.DRAPH_ART_RESPONSE_PROCESSING_FAILED);
         }
 
         if (base64List.isEmpty()) {
-            log.error("배경 생성 응답이 비어있습니다.");
             throw new BusinessException(ErrorCode.DRAPH_ART_EMPTY_RESPONSE);
         }
 
@@ -244,10 +242,9 @@ public class ImageBgService {
         for (int i = 0; i < base64List.size(); i++) {
             String base64 = base64List.get(i);
             try {
-                String outputImagePath = fileStorageService.saveBase64Image(base64);
+                String outputImagePath = ImageFileService.saveBase64Image(base64, String.valueOf(userId), "temp-images");
                 responseList.add(new BgGenerateResponse(outputImagePath));
             } catch (IllegalArgumentException e) {
-                log.error("Base64 디코딩 실패: index={} data={}", i, base64, e);
                 throw new BusinessException(ErrorCode.DRAPH_ART_RESPONSE_PROCESSING_FAILED);
             }
         }
