@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -105,7 +106,7 @@ public class VideoController {
     public ResponseEntity<SaveResponse> saveVideo(
             @Parameter(description = "저장할 회원의 ID", required = true)
             @PathVariable Long userId,
-            @RequestBody SaveRequest request) {
+            @RequestBody SaveRequest request) throws IOException {
         SaveResponse response = videoService.saveVideo(userId, request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
