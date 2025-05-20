@@ -34,15 +34,6 @@ public class FileStorageService {
     @Value("${file.temp-dir}")
     private String tempDir;
 
-    @Value("${file.temp-url}")
-    private String tempUrl;
-
-    @Value("${file.logo-dir}")
-    private String logoPath;
-
-    @Value("${file.logo-url}")
-    private String logoUrl;
-
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png");
 
     // 이미지 업로드
@@ -51,7 +42,7 @@ public class FileStorageService {
         try {
             String extension = getFileExtension(image.getOriginalFilename());
             String newFileName = UUID.randomUUID() + "." + extension;
-            String objectPath = "uploads/" + subDir + "/" + userId + "/" + newFileName;
+            String objectPath = "uploads/" + userId + "/" + subDir + "/" + newFileName;
 
             BlobInfo blobInfo = BlobInfo.newBuilder(bucketName, objectPath)
                     .setContentType(image.getContentType())
@@ -74,7 +65,7 @@ public class FileStorageService {
     @Transactional
     public String saveBgRemoveFile(byte[] imageBytes, String userId, Long imageId, String subDir) {
         String fileName = "processed_" + imageId + ".png";
-        String objectPath = "uploads/" + subDir + "/" + userId + "/" + fileName;
+        String objectPath = "uploads/" + userId + "/" + subDir + "/" + fileName;
 
         BlobInfo blobInfo = BlobInfo.newBuilder(bucketName, objectPath)
                 .setContentType("image/png")
@@ -90,6 +81,31 @@ public class FileStorageService {
         return "https://storage.googleapis.com/" + bucketName + "/" + objectPath;
     }
 
+    // 배경 생성 이미지 저장
+    @Transactional
+    public String saveBase64Image(String base64Data, String userId, String subDir) {
+        try {
+            byte[] imageBytes = Base64.getDecoder().decode(base64Data);
+            String fileName = "processed_" + UUID.randomUUID() + ".png";
+            String objectPath = "uploads/" + userId + "/" + subDir + "/" + fileName;
+
+            BlobInfo blobInfo = BlobInfo.newBuilder(bucketName, objectPath)
+                    .setContentType("image/png")
+                    .build();
+
+            storage.create(blobInfo, imageBytes);
+
+            storage.get(blobInfo.getBlobId()).toBuilder()
+                    .setAcl(List.of(Acl.of(Acl.User.ofAllUsers(), Acl.Role.READER)))
+                    .build()
+                    .update();
+
+            return "https://storage.googleapis.com/" + bucketName + "/" + objectPath;
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException(ErrorCode.GCS_UPLOAD_FAILED);
+        }
+    }
+
     // 파일 이동 (복사 후 원본 삭제)
     @Transactional
     public void moveFile(File source, File target) {
@@ -101,28 +117,7 @@ public class FileStorageService {
             ensureDirectoryExists(target.getParentFile().getAbsolutePath());
             Files.copy(source.toPath(), target.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 
-            boolean deleted = source.delete();
-            if (!deleted) {
-                log.warn("원본 파일 삭제 실패: {}", source.getAbsolutePath());
-            }
         } catch (IOException e) {
-            throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE);
-        }
-    }
-
-    // 배경 생성 이미지 저장
-    @Transactional
-    public String saveBase64Image(String base64Data) {
-        try {
-            ensureDirectoryExists(tempDir);
-
-            byte[] imageBytes = Base64.getDecoder().decode(base64Data);
-            String fileName = "processed_" + UUID.randomUUID() + ".png";
-            String filePath = Paths.get(tempDir, fileName).toString();
-
-            Files.write(Paths.get(filePath), imageBytes);
-            return tempUrl + fileName;
-        } catch (IOException | IllegalArgumentException e) {
             throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE);
         }
     }

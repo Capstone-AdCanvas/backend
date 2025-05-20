@@ -55,7 +55,7 @@ public class ImageBgController {
     public ResponseEntity<List<BgGenerateResponse>> generateBg(
             @PathVariable Long imageId,
             @RequestBody BgGenerateRequest request
-    ) throws JsonProcessingException {
+    ) throws IOException {
         List<BgGenerateResponse> response = imageBgService.generateBg(imageId, request);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
@@ -70,7 +70,7 @@ public class ImageBgController {
     public ResponseEntity<List<BgGenerateResponse>> generateCustomBg(
             @PathVariable Long imageId,
             @RequestBody BgCustomGenerateRequest request
-    ) throws JsonProcessingException {
+    ) throws IOException {
         List<BgGenerateResponse> response = imageBgService.generateCustomBg(imageId, request);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
