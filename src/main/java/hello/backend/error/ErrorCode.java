@@ -49,7 +49,11 @@ public enum ErrorCode {
     CLOVA_TTS_INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "TTS_VS99", "CLOVA TTS 서버 내부 오류입니다."),
 
     // VIDEO
-    VIDEO_DUPLICATE_NAME(HttpStatus.BAD_REQUEST, "VID_VS01", "이미 존재하는 영상 이름입니다.");
+    VIDEO_DUPLICATE_NAME(HttpStatus.BAD_REQUEST, "VID_VS01", "이미 존재하는 영상 이름입니다."),
+    VIDEO_URL_NOT_FOUND(HttpStatus.NOT_FOUND, "VIDEO_URL_404", "비디오 url을 찾을 수 없습니다."),
+
+    // AUDIO
+    AUDIO_NOT_FOUND(HttpStatus.NOT_FOUND, "AUDIO_URL_404", "오디오를 찾을 수 없습니다.");
     private final HttpStatus httpStatus;
     private final String code;
     private final String message;

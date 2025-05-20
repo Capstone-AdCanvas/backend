@@ -98,10 +98,11 @@ public class VideoService {
     //image-to-video(kling 모델) 생성 - 비동기 큐
     @Transactional
     public QueueStatus.InQueue createImageToVideo(ImageToVideoRequest request) {
-        String finalprompt = deepSeekService.imageTransFormScript(request.getPrompt());
+        //String finalprompt = deepSeekService.imageTransFormScript(request.getPrompt());
 
         Map<String, Object> input = Map.of(
-                "prompt", finalprompt,
+                //"prompt", finalprompt,
+                "prompt", request.getPrompt(),
                 "image_url", request.getImageUrl(),
                 "duration", request.getDuration(),
                 "aspect_ratio", request.getAspect_ratio()
