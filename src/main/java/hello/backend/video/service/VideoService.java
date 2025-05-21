@@ -20,6 +20,7 @@ import hello.backend.video.repository.VideoRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.units.qual.Temperature;
 import org.springframework.stereotype.Service;
 import ai.fal.client.exception.FalException;
 
@@ -27,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -278,5 +280,21 @@ public class VideoService {
         } else {
             throw new BusinessException(ErrorCode.FAL_NOT_FOUND, "알 수 없는 상태입니다.");
         }
+    }
+
+    @Transactional
+    public List<VideoResponse> getUserVideo(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        List<Video> videos = videoRepository.findAllByUserOrderByCreatedAtDesc(user);
+
+        if (videos.isEmpty()) {
+            throw new BusinessException(ErrorCode.VIDEO_URL_NOT_FOUND);
+        }
+
+        return videos.stream()
+                .map(VideoResponse::new)
+                .collect(Collectors.toList());
     }
 }
