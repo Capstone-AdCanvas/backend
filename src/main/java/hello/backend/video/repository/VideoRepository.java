@@ -13,4 +13,5 @@ public interface VideoRepository extends JpaRepository<Video, Long> {
     boolean existsByName(String name);
     List<Video> findAllByUserOrderByCreatedAtDesc(User user);
     Optional<Video> findTopByIdOrderByCreatedAtDesc(Long videoId);
+    List<Video> findAllByUserNot(User user);
 }

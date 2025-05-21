@@ -301,4 +301,15 @@ public class VideoService {
 
         return new VideoResponse(video);
     }
+
+    public List<VideoResponse> getAllVideoExceptCurrentUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        List<Video> videos = videoRepository.findAllByUserNot(user);
+
+        return videos.stream()
+                .map(VideoResponse::new)
+                .collect(Collectors.toList());
+    }
 }
