@@ -38,13 +38,15 @@ public class ImageController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    @Operation(summary = "모든 이미지 조회", description = "모든 이미지를 조회합니다.")
+    @Operation(summary = "사용자 제외 이미지 조회", description = "현재 사용자를 제외한 모든 이미지를 조회합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "조회 성공"),
     })
     @GetMapping("")
-    public ResponseEntity<List<ImageResponse>> getAllImages() {
-        List<ImageResponse> images = imageService.getAllImages();
+    public ResponseEntity<List<ImageResponse>> getAllImages(
+            @RequestParam Long userId
+    ) {
+        List<ImageResponse> images = imageService.getAllImagesExceptCurrentUser(userId);
         return new ResponseEntity<>(images, HttpStatus.OK);
     }
 
@@ -53,9 +55,9 @@ public class ImageController {
             @ApiResponse(responseCode = "200", description = "조회 성공"),
             @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음")
     })
-    @GetMapping("/user/{userId}")
+    @GetMapping("/user")
     public ResponseEntity<List<ImageResponse>> getUserImages(
-            @PathVariable Long userId
+            @RequestParam Long userId
     ) {
         List<ImageResponse> images = imageService.getUserImages(userId);
         return new ResponseEntity<>(images, HttpStatus.OK);

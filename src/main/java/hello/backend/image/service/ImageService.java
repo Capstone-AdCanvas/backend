@@ -55,8 +55,11 @@ public class ImageService {
     }
 
     // 전체 이미지 조회
-    public List<ImageResponse> getAllImages() {
-        List<Image> images = imageRepository.findAll();
+    public List<ImageResponse> getAllImagesExceptCurrentUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        List<Image> images = imageRepository.findAllByUserNot(user);
         return images.stream()
                 .map(this::toFinalImageResponse)
                 .toList();
