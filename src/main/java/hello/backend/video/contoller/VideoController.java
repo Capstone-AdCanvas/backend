@@ -112,6 +112,49 @@ public class VideoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
     //--------------------------------------------------------------------------------------------------
+    @Operation(summary = "사용자 생성 비디오 조회", description = "사용자의 비디오를 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "비디오 조회 성공"),
+            @ApiResponse(responseCode = "404", description = "비디오를 찾을 수 없습니다.")
+    })
+    @GetMapping("/user")
+    public ResponseEntity<List<VideoResponse>> getUserVideo(
+            @Parameter(description = "조회할 사용자의 ID", required = true)
+            @RequestParam Long userId) {
+        List<VideoResponse> response = videoService.getUserVideo(userId);
+
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @Operation(summary = "특정 비디오 조회", description = "특정 비디오를 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "비디오 조회 성공"),
+            @ApiResponse(responseCode = "404", description = "비디오를 찾을 수 없습니다.")
+    })
+    @GetMapping("/{videoId}")
+    public ResponseEntity<VideoResponse> getSpecificalVideo(
+            @Parameter(description = "조회할 비디오의 ID", required = true)
+            @RequestParam Long videoId) {
+        VideoResponse response = videoService.getUserSpecificalVideo(videoId);
+
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @Operation(summary = "현재 사용자를 제외 전체 비디오 조회", description = "현재 사용자를 제외한 전체 비디오를 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "비디오 조회 성공"),
+            @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없습니다.")
+    })
+    @GetMapping("")
+    public ResponseEntity<List<VideoResponse>> getAllVideoExceptCurrentUser(
+            @Parameter(description = "제외할 사용자의 ID", required = true)
+            @RequestParam Long userId
+    ) {
+        List<VideoResponse> response = videoService.getAllVideoExceptCurrentUser(userId);
+
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+    //--------------------------------------------------------------------------------------------------
     @Operation(summary = "DeepSeek prompt 테스트(text)", description = "prompt를 DeepSeek에 보내 변환된 결과를 확인합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "변환 성공")
