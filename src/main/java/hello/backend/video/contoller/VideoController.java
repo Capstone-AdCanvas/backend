@@ -117,11 +117,25 @@ public class VideoController {
             @ApiResponse(responseCode = "200", description = "비디오 조회 성공"),
             @ApiResponse(responseCode = "404", description = "비디오를 찾을 수 없습니다.")
     })
-    @GetMapping("/videos/user/")
+    @GetMapping("/user")
     public ResponseEntity<List<VideoResponse>> getUserVideo(
             @Parameter(description = "조회할 사용자의 ID", required = true)
             @RequestParam Long userId) {
         List<VideoResponse> response = videoService.getUserVideo(userId);
+
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @Operation(summary = "특정 비디오 조회", description = "특정 비디오를 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "비디오 조회 성공"),
+            @ApiResponse(responseCode = "404", description = "비디오를 찾을 수 없습니다.")
+    })
+    @GetMapping("/{videoId}")
+    public ResponseEntity<VideoResponse> getUserSpecificalVideo(
+            @Parameter(description = "조회할 사용자의 ID", required = true)
+            @RequestParam Long videoId) {
+        VideoResponse response = videoService.getUserSpecificalVideo(videoId);
 
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }

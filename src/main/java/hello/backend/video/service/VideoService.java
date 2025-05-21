@@ -289,12 +289,16 @@ public class VideoService {
 
         List<Video> videos = videoRepository.findAllByUserOrderByCreatedAtDesc(user);
 
-        if (videos.isEmpty()) {
-            throw new BusinessException(ErrorCode.VIDEO_URL_NOT_FOUND);
-        }
-
         return videos.stream()
                 .map(VideoResponse::new)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public VideoResponse getUserSpecificalVideo(Long videoId) {
+        Video video = videoRepository.findTopByIdOrderByCreatedAtDesc(videoId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.VIDEO_URL_NOT_FOUND));
+
+        return new VideoResponse(video);
     }
 }
