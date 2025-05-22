@@ -55,6 +55,7 @@ public class GCSService {
     public String uploadToGCS(byte[] imageBytes, String userId, String subDir, String fileName, String contentType) {
         String objectPath = "uploads/" + userId + "/" + subDir + "/" + fileName;
         BlobInfo blobInfo = BlobInfo.newBuilder(bucketName, objectPath)
+                .setAcl(List.of(Acl.of(Acl.User.ofAllUsers(), Acl.Role.READER)))
                 .setContentType(contentType)
                 .build();
 

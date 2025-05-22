@@ -54,6 +54,15 @@ public class ImageService {
         return toOriginalImageResponse(savedImage);
     }
 
+    public ImageResponse getImageName(Long imageId, String name) {
+        Image image = imageRepository.findById(imageId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
+
+        image.setName(name);
+        imageRepository.save(image);
+        return toFinalImageResponse(image);
+    }
+
     // 전체 이미지 조회
     public List<ImageResponse> getAllImagesExceptCurrentUser(Long userId) {
         User user = userRepository.findById(userId)
