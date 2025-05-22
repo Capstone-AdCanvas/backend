@@ -134,6 +134,7 @@ public class DeepSeekService {
             - Do not repeat similar phrases or sentence structures from previous outputs.
             - Use emotional but authentic tone. Avoid exaggeration.
             - Length: 1 sentences, about 3 seconds.
+            - It must be exactly 12~14 Korean syllables (characters).
             - Output only the final Korean script. No lists, no numbers, no explanations.
             Sentence for inspiration:
             """ + script;
