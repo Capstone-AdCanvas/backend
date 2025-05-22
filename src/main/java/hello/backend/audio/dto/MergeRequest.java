@@ -9,4 +9,5 @@ import java.util.List;
 public class MergeRequest {
     private List<String> videoUrls;
     private String tema;
+    private List<String> ttsUrls;
 }
