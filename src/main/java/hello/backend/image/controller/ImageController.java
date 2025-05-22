@@ -38,10 +38,10 @@ public class ImageController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    @Operation(summary = "이미지 업로드", description = "상품의 이미지를 업로드합니다.")
+    @Operation(summary = "이미지 이름 저장", description = "상품의 이름을 설정합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "업로드 성공"),
-            @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음"),
+            @ApiResponse(responseCode = "404", description = "이미지를 찾을 수 없음"),
     })
     @PostMapping(value = "/name", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ImageResponse> setImageName(
