@@ -47,6 +47,7 @@ public enum ErrorCode {
     CLOVA_TTS_UNSUPPORTED_EMOTION_STRENGTH(HttpStatus.BAD_REQUEST, "TTS_VS19", "입력된 감정 강도(emotion-strength) 파라미터 값을 지원하지 않음"),
     CLOVA_TTS_FAILED(HttpStatus.BAD_REQUEST, "TTS_VS26", "TTS 생성 실패"),
     CLOVA_TTS_INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "TTS_VS99", "CLOVA TTS 서버 내부 오류입니다."),
+    TTS_FILE_SAVE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "TTS_FS01", "TTS 오디오 파일 저장에 실패했습니다."),
 
     // GCS
     GCS_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "GCS_VS01", "GCS 업로드 실패"),

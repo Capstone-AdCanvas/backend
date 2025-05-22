@@ -1,21 +1,12 @@
 package hello.backend.tts.dto;
 
-import hello.backend.tts.dto.enums.TTSModel;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Getter
+@Data
 @AllArgsConstructor
+@NoArgsConstructor
 public class TTSResponse {
-    private String name;
-    private String code;
-    private String gender;
-
-    public static TTSResponse from(TTSModel model) {
-        return new TTSResponse(
-                model.getName(),
-                model.getCode(),
-                model.getGender()
-        );
-    }
+    private String ttsPath;
 }

@@ -3,10 +3,12 @@ package hello.backend.tts.service;
 import hello.backend.ai.deepseek.service.DeepSeekService;
 import hello.backend.error.ErrorCode;
 import hello.backend.error.exception.BusinessException;
+import hello.backend.tts.dto.TTSModelResponse;
 import hello.backend.tts.dto.TTSRequest;
 import hello.backend.tts.dto.TTSResponse;
 import hello.backend.tts.dto.enums.TTSModel;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,9 @@ import reactor.core.publisher.Mono;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -26,6 +31,9 @@ import java.util.zip.ZipOutputStream;
 
 @Service
 public class TTSService {
+
+    @Value("${file.tts-dir}")
+    private String ttsDir;
 
     private final DeepSeekService deepSeekService;
     private final WebClient clovaTtsWebClient;
@@ -37,21 +45,39 @@ public class TTSService {
     }
 
     // tts 모델 조회
-    public List<TTSResponse> getTTSModel() {
+    public List<TTSModelResponse> getTTSModel() {
         return Arrays.stream(TTSModel.values())
-                .map(TTSResponse::from)
+                .map(TTSModelResponse::from)
                 .collect(Collectors.toList());
     }
 
-    public Mono<List<byte[]>> getTtsAudioListAsync(TTSRequest ttsRequest) {
+    public Mono<List<String>> getTtsAudioListAsync(TTSRequest request) {
+        int chunkCount = Math.max(1, request.getSecond() / 5);
 
-        int chunkCount = ttsRequest.getSecond() / 5;
-        List<String> chunks = deepSeekService.generateMultipleImageScripts(ttsRequest.getText(), chunkCount);
-        List<Mono<byte[]>> audioRequests = chunks.stream()
-                .map(chunkText -> sendTtsRequest(chunkText, ttsRequest))
-                .collect(Collectors.toList());
+        List<String> ttsTexts = deepSeekService.generateMultipleImageScripts(request.getText(), chunkCount);
+        List<Mono<String>> fileMonos = new ArrayList<>();
 
-        return Flux.merge(audioRequests).collectList();
+        for (int i = 0; i < ttsTexts.size(); i++) {
+            String sentence = ttsTexts.get(i);
+            int index = i;
+
+            Mono<String> fileMono = sendTtsRequest(sentence, request)
+                    .flatMap(audioBytes -> {
+                        String filename = "audio_" + System.currentTimeMillis() + "_" + index + ".mp3";
+                        Path filePath = Paths.get(ttsDir, filename);
+                        try {
+                            Files.createDirectories(filePath.getParent());
+                            Files.write(filePath, audioBytes);
+                            return Mono.just(filename);
+                        } catch (IOException e) {
+                            return Mono.error(new BusinessException(ErrorCode.TTS_FILE_SAVE_FAILED));
+                        }
+                    });
+
+            fileMonos.add(fileMono);
+        }
+
+        return Flux.merge(fileMonos).collectList();
     }
 
     private Mono<byte[]> sendTtsRequest(String chunkText, TTSRequest originalRequest) {
@@ -74,21 +100,6 @@ public class TTSService {
                         Mono.error(new BusinessException(ErrorCode.CLOVA_TTS_INTERNAL_ERROR))
                 )
                 .bodyToMono(byte[].class);
-    }
-
-    public byte[] zipAudioFiles(List<byte[]> audioList) {
-        try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-             ZipOutputStream zipOut = new ZipOutputStream(byteArrayOutputStream)) {
-            for (int i = 0; i < audioList.size(); i++) {
-                zipOut.putNextEntry(new ZipEntry("speech_" + i + ".mp3"));
-                zipOut.write(audioList.get(i));
-                zipOut.closeEntry();
-            }
-            zipOut.finish();
-            return byteArrayOutputStream.toByteArray();
-        } catch (IOException e) {
-            throw new RuntimeException("ZIP 생성 실패", e);
-        }
     }
 
     private static ErrorCode extractClovaErrorCode(String body) {

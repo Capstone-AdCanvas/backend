@@ -63,6 +63,7 @@ public class ImageLogoService {
         return new LogoResponse(
                 logo.getId(),
                 logo.getUser().getId(),
+                logo.getName(),
                 logo.getLogoImage()
         );
     }

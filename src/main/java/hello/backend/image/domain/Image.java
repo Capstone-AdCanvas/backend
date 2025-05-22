@@ -27,6 +27,8 @@ public class Image {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    private String name;
+
     @Column(nullable = false)
     private String originalImage;
 
