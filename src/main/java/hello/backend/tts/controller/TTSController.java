@@ -27,7 +27,7 @@ public class TTSController {
 
     @Operation(summary = "TTS 변환", description = "대본을 바탕으로 보이스를 생성하고 URL 리스트를 반환합니다.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "생성 성공"),
+            @ApiResponse(responseCode = "201", description = "생성 성공"),
             @ApiResponse(responseCode = "400", description = "잘못된 요청"),
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
