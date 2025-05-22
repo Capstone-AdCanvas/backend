@@ -19,6 +19,9 @@ public class WebConfig {
     @Value("${file.tts-url}")
     private String ttsUrl;
 
+    @Value("${spring.cloud.gcp.storage.bucket}")
+    private String bucketName;
+
     @Bean
     public WebMvcConfigurer corsConfigurer() {
         return new WebMvcConfigurer() {
@@ -35,6 +38,11 @@ public class WebConfig {
             public void addResourceHandlers(ResourceHandlerRegistry registry) {
                 registry.addResourceHandler(ttsUrl + "**")
                         .addResourceLocations("file:" + ttsDir + "/");
+
+                registry.addResourceHandler("/images/**")
+                        .addResourceLocations("https://storage.googleapis.com/" + bucketName + "/")
+                        .setCachePeriod(3600)
+                        .resourceChain(true);
             }
         };
     }

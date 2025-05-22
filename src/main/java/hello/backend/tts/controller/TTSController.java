@@ -1,5 +1,6 @@
 package hello.backend.tts.controller;
 
+import hello.backend.tts.dto.TTSPreviewRequest;
 import hello.backend.tts.dto.TTSRequest;
 import hello.backend.tts.dto.TTSModelResponse;
 import hello.backend.tts.dto.TTSResponse;
@@ -38,6 +39,18 @@ public class TTSController {
                         .map(name -> new TTSResponse(ttsUrl + name))
                         .collect(Collectors.toList()))
                 .map(ResponseEntity::ok);
+    }
+
+    @Operation(summary = "TTS 미리듣기", description = "생성된 대본을 바탕으로 TTS 모델의 음성을 들어봅니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "생성 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+    })
+    @PostMapping("/preview")
+    public Mono<ResponseEntity<TTSResponse>> convertTtsListen(@RequestBody TTSPreviewRequest request) {
+        return ttsService.generatePreviewAudio(request)
+                .map(ttsResponse -> ResponseEntity.status(201).body(ttsResponse));
     }
 
     @Operation(summary = "tts 모델 조회", description = "tts 모델을 조회합니다.")
