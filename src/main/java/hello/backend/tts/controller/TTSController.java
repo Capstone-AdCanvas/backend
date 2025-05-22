@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
@@ -21,6 +22,9 @@ import java.util.stream.Collectors;
 public class TTSController {
     private final TTSService ttsService;
 
+    @Value("${file.tts-url}")
+    private String ttsUrl;
+
     @Operation(summary = "TTS 변환", description = "대본을 바탕으로 보이스를 생성하고 URL 리스트를 반환합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "생성 성공"),
@@ -31,7 +35,7 @@ public class TTSController {
     public Mono<ResponseEntity<List<TTSResponse>>> convertTts(@RequestBody TTSRequest ttsRequest) {
         return ttsService.getTtsAudioListAsync(ttsRequest)
                 .map(fileNames -> fileNames.stream()
-                        .map(name -> new TTSResponse("/tts/" + name))
+                        .map(name -> new TTSResponse(ttsUrl + name))
                         .collect(Collectors.toList()))
                 .map(ResponseEntity::ok);
     }
