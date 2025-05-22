@@ -126,6 +126,7 @@ public class ImageService {
         return new ImageResponse(
                 image.getId(),
                 image.getUser().getId(),
+                image.getName(),
                 image.getOriginalImage()
         );
     }
@@ -134,6 +135,7 @@ public class ImageService {
         return new ImageResponse(
                 image.getId(),
                 image.getUser().getId(),
+                image.getName(),
                 image.getFinalImage()
         );
     }

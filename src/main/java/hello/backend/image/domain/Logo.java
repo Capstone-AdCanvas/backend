@@ -26,6 +26,8 @@ public class Logo {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    private String name;
+
     private String logoImage;
 
     private LocalDateTime createdAt;

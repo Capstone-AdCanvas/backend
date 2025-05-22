@@ -13,5 +13,6 @@ import java.time.LocalDateTime;
 public class ImageResponse {
     private Long id;
     private Long userId;
+    private String name;
     private String finalImage;
 }
