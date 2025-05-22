@@ -13,8 +13,11 @@ public class WebConfig {
     @Value("${cors.allowed-origins}")
     private String allowedOrigins;
 
-    @Value("${file.upload.path}")
-    private String uploadPath;
+    @Value("${file.tts-dir}")
+    private String ttsDir;
+
+    @Value("${file.tts-url}")
+    private String ttsUrl;
 
     @Bean
     public WebMvcConfigurer corsConfigurer() {
@@ -30,8 +33,8 @@ public class WebConfig {
 
             @Override
             public void addResourceHandlers(ResourceHandlerRegistry registry) {
-                registry.addResourceHandler("/uploads/**")
-                        .addResourceLocations(uploadPath);
+                registry.addResourceHandler(ttsUrl + "**")
+                        .addResourceLocations("file:" + ttsDir + "/");
             }
         };
     }

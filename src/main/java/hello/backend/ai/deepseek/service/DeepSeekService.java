@@ -102,7 +102,7 @@ public class DeepSeekService {
         List<String> validSentences = Arrays.stream(sentenceChunks)
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
-                .collect(Collectors.toList());
+                .toList();
 
         List<String> adjustedChunks = new ArrayList<>();
         int totalLength = validSentences.stream().mapToInt(String::length).sum();
@@ -117,7 +117,7 @@ public class DeepSeekService {
                 currentChunk = new StringBuilder(sentence).append(" ");
             }
         }
-        if (currentChunk.length() > 0) {
+        if (!currentChunk.isEmpty()) {
             adjustedChunks.add(currentChunk.toString().trim());
         }
 
@@ -126,17 +126,17 @@ public class DeepSeekService {
         }
 
         for (int i = 0; i < chunkCount; i++) {
-            String inspiration = adjustedChunks.get(i);
+            String script = adjustedChunks.get(i);
             String prompt = """
             Please write exactly one unique and creative voiceover script for an advertising video based on the sentence below.
             - Theme: advertising (including public service announcements).
             - The script must reflect a *different perspective or message* from others.
             - Do not repeat similar phrases or sentence structures from previous outputs.
             - Use emotional but authentic tone. Avoid exaggeration.
-            - Length: 1 to 2 sentences, about 5 seconds.
+            - Length: 1 sentences, about 3 seconds.
             - Output only the final Korean script. No lists, no numbers, no explanations.
             Sentence for inspiration:
-            """ + inspiration;
+            """ + script;
 
             Map<String, Object> requestBody = Map.of(
                     "model", model,
