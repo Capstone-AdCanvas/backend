@@ -28,8 +28,8 @@ public class MergeController {
             @ApiResponse(responseCode = "400", description = "잘못된 입력값입니다."),
     })
     @GetMapping("/merge")
-    public ResponseEntity<Resource> mergeVideoAudio(@RequestParam List<String> videoUrls,@RequestParam(required = false) String tema) throws IOException {
-        File file = audioService.mergeVideoAudio(videoUrls, tema);
+    public ResponseEntity<Resource> mergeVideoAudio(@RequestParam List<String> videoUrls,@RequestParam(required = false) String tema, @RequestParam(required = false) List<String> ttsUrl) throws IOException {
+        File file = audioService.mergeVideoAudio(videoUrls, tema, ttsUrl);
         Resource resource = new FileSystemResource(file);
 
         return ResponseEntity.ok()
