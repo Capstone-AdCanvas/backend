@@ -133,9 +133,10 @@ public class DeepSeekService {
             - The script must reflect a *different perspective or message* from others.
             - Do not repeat similar phrases or sentence structures from previous outputs.
             - Use a persuasive and emotionally resonant tone that feels genuine and trustworthy.
-            - Avoid exaggerated or overdramatic language.
-            - Length: 1 sentences, about 3 seconds.
-            - It must be exactly 12~14 Korean syllables (characters).
+            - Avoid exaggerated, clichéd, or overdramatic language.
+            - Length: one sentence, The sentence must sound natural when read aloud **within exactly 4 seconds**, not shorter or longer.
+            - Recommended: Approximately 19 Korean syllables for timing.
+            - Always use **polite and respectful language (존댓말)** appropriate for a general audience.
             - Output only the final Korean script. No lists, no numbers, no explanations.
             - The sentence must be grammatically complete and sound natural in Korean.
             - IMPORTANT: Do not repeat or paraphrase previous messages. The script must be unique.
