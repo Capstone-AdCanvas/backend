@@ -27,6 +27,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.channels.Channels;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -203,11 +204,13 @@ public class ImageBgService {
             throw new BusinessException(ErrorCode.IMAGE_NOT_FOUND);
         }
 
+        // Blob에서 바로 임시파일로 저장
         Path tempFile = Files.createTempFile("final_", ".png");
-        try (InputStream in = new URL(image.getProcessedImage()).openStream()) {
+        try (InputStream in = Channels.newInputStream(blob.reader())) {
             Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
         }
 
+        // 임시파일을 final 폴더에 저장 (userId, imageId 등으로 경로 관리)
         String finalImageUrl = ImageFileService.chooseFinalImage(tempFile.toFile(), image.getUser().getId().toString(), imageId, "final");
         image.setFinalImage(finalImageUrl);
         imageRepository.save(image);

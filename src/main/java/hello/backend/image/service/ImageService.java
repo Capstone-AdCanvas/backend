@@ -3,10 +3,7 @@ package hello.backend.image.service;
 import hello.backend.error.ErrorCode;
 import hello.backend.error.exception.BusinessException;
 import hello.backend.image.domain.Image;
-import hello.backend.image.dto.CombineImageRequest;
-import hello.backend.image.dto.CombineImageResponse;
-import hello.backend.image.dto.ImageResponse;
-import hello.backend.image.dto.OverlayItemRequest;
+import hello.backend.image.dto.*;
 import hello.backend.image.repository.ImageRepository;
 import hello.backend.user.domain.User;
 import hello.backend.user.repository.UserRepository;
@@ -34,7 +31,7 @@ public class ImageService {
     private final ImageFileService ImageFileService;
 
     // 이미지 업로드 (기본)
-    public ImageResponse uploadImage(Long userId, MultipartFile image) throws IOException {
+    public ImageUploadResponse uploadImage(Long userId, MultipartFile image) throws IOException {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
@@ -112,7 +109,9 @@ public class ImageService {
                     java.awt.Image scaledLogo = logoImage.getScaledInstance(logoWidth, logoHeight, java.awt.Image.SCALE_SMOOTH);
                     g2d.drawImage(scaledLogo, overlay.getX(), overlay.getY(), logoWidth, logoHeight, null);
                 } else if ("text".equalsIgnoreCase(overlay.getType())) {
-                    g2d.setFont(new Font(overlay.getFont(), Font.PLAIN, overlay.getSize()));
+                    Font font = new Font(overlay.getFont(), Font.PLAIN, overlay.getSize());
+                    log.info("font: " + font);
+                    g2d.setFont(font);
                     g2d.setColor(Color.decode(overlay.getColor()));
                     g2d.drawString(overlay.getText(), overlay.getX(), overlay.getY());
                 }
@@ -131,8 +130,8 @@ public class ImageService {
         }
     }
 
-    private ImageResponse toOriginalImageResponse(Image image) {
-        return new ImageResponse(
+    private ImageUploadResponse toOriginalImageResponse(Image image) {
+        return new ImageUploadResponse(
                 image.getId(),
                 image.getUser().getId(),
                 image.getName(),
