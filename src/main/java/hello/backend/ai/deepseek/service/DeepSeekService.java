@@ -8,10 +8,7 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -125,17 +122,23 @@ public class DeepSeekService {
             adjustedChunks.add(adjustedChunks.get(adjustedChunks.size() - 1));
         }
 
+        Set<String> uniqueScripts = new HashSet<>();
+
         for (int i = 0; i < chunkCount; i++) {
             String script = adjustedChunks.get(i);
+
             String prompt = """
             Please write exactly one unique and creative voiceover script for an advertising video based on the sentence below.
             - Theme: advertising (including public service announcements).
             - The script must reflect a *different perspective or message* from others.
             - Do not repeat similar phrases or sentence structures from previous outputs.
-            - Use emotional but authentic tone. Avoid exaggeration.
+            - Use a persuasive and emotionally resonant tone that feels genuine and trustworthy.
+            - Avoid exaggerated or overdramatic language.
             - Length: 1 sentences, about 3 seconds.
             - It must be exactly 12~14 Korean syllables (characters).
             - Output only the final Korean script. No lists, no numbers, no explanations.
+            - The sentence must be grammatically complete and sound natural in Korean.
+            - IMPORTANT: Do not repeat or paraphrase previous messages. The script must be unique.
             Sentence for inspiration:
             """ + script;
 
@@ -149,8 +152,8 @@ public class DeepSeekService {
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+
             ResponseEntity<Map> response = restTemplate.exchange(apiUrl, HttpMethod.POST, entity, Map.class);
 
             List<Map<String, Object>> choices = (List<Map<String, Object>>) response.getBody().get("choices");
@@ -158,9 +161,16 @@ public class DeepSeekService {
             Map<String, String> message = (Map<String, String>) firstChoice.get("message");
 
             String content = message.get("content").split("\\n")[0].replaceAll("^\\d+\\.?\\s*", "").trim();
-            scripts.add(content);
 
-            log.info("Script " + (i + 1) + ": " + content);
+            // 중복 체크
+            if (!uniqueScripts.contains(content)) {
+                uniqueScripts.add(content);
+                scripts.add(content);
+                log.info("Script {}: {}", (i + 1), content);
+            } else {
+                log.warn("중복 감지됨. 다시 시도합니다: {}", content);
+                i--; // 다시 시도
+            }
         }
 
         return scripts;
