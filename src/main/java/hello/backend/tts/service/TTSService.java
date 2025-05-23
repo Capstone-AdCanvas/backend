@@ -4,6 +4,7 @@ import hello.backend.ai.deepseek.service.DeepSeekService;
 import hello.backend.error.ErrorCode;
 import hello.backend.error.exception.BusinessException;
 import hello.backend.tts.dto.TTSModelResponse;
+import hello.backend.tts.dto.TTSPreviewRequest;
 import hello.backend.tts.dto.TTSRequest;
 import hello.backend.tts.dto.TTSResponse;
 import hello.backend.tts.dto.enums.TTSModel;
@@ -17,23 +18,24 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 @Service
 public class TTSService {
 
     @Value("${file.tts-dir}")
     private String ttsDir;
+
+    @Value("${file.tts-url}")
+    private String ttsUrl;
 
     private final DeepSeekService deepSeekService;
     private final WebClient clovaTtsWebClient;
@@ -88,6 +90,45 @@ public class TTSService {
                         .with("text", chunkText)
                         .with("emotion", String.valueOf(originalRequest.getEmotion()))
                         .with("emotion-strength", String.valueOf(originalRequest.getEmotionStrength()))
+                        .with("speed", String.valueOf(-1)))
+                .retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError, response ->
+                        response.bodyToMono(String.class)
+                                .map(TTSService::extractClovaErrorCode)
+                                .map(BusinessException::new)
+                                .flatMap(Mono::error)
+                )
+                .onStatus(HttpStatusCode::is5xxServerError, response ->
+                        Mono.error(new BusinessException(ErrorCode.CLOVA_TTS_INTERNAL_ERROR))
+                )
+                .bodyToMono(byte[].class);
+    }
+
+    public Mono<TTSResponse> generatePreviewAudio(TTSPreviewRequest request) {
+        return sendTtsRequest(request.getText(), request)
+                .flatMap(audioBytes -> {
+                    String filename = "preview_" + System.currentTimeMillis() + "_0.mp3";
+                    Path filePath = Paths.get(ttsDir, filename);
+
+                    try {
+                        Files.createDirectories(filePath.getParent());
+                        Files.write(filePath, audioBytes);
+                        String ttsPath = ttsUrl + filename;
+                        return Mono.just(new TTSResponse(ttsPath));
+                    } catch (IOException e) {
+                        return Mono.error(new BusinessException(ErrorCode.TTS_FILE_SAVE_FAILED));
+                    }
+                });
+    }
+
+    private Mono<byte[]> sendTtsRequest(String text, TTSPreviewRequest request) {
+        return clovaTtsWebClient.post()
+                .uri("/tts")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body(BodyInserters.fromFormData("speaker", request.getSpeaker())
+                        .with("text", text)
+                        .with("emotion", String.valueOf(request.getEmotion()))
+                        .with("emotion-strength", String.valueOf(request.getEmotionStrength()))
                         .with("speed", String.valueOf(-1)))
                 .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError, response ->
