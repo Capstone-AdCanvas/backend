@@ -35,9 +35,6 @@ public class TTSController {
     @PostMapping("")
     public Mono<ResponseEntity<List<TTSResponse>>> convertTts(@RequestBody TTSRequest ttsRequest) {
         return ttsService.getTtsAudioListAsync(ttsRequest)
-                .map(fileNames -> fileNames.stream()
-                        .map(name -> new TTSResponse(ttsUrl + name))
-                        .collect(Collectors.toList()))
                 .map(ResponseEntity::ok);
     }
 

@@ -53,24 +53,25 @@ public class TTSService {
                 .collect(Collectors.toList());
     }
 
-    public Mono<List<String>> getTtsAudioListAsync(TTSRequest request) {
+    public Mono<List<TTSResponse>> getTtsAudioListAsync(TTSRequest request) {
         int chunkCount = Math.max(1, request.getSecond() / 5);
 
         List<String> ttsTexts = deepSeekService.generateMultipleImageScripts(request.getText(), chunkCount);
-        List<Mono<String>> fileMonos = new ArrayList<>();
+        List<Mono<TTSResponse>> fileMonos = new ArrayList<>();
 
         for (int i = 0; i < ttsTexts.size(); i++) {
             String sentence = ttsTexts.get(i);
             int index = i;
 
-            Mono<String> fileMono = sendTtsRequest(sentence, request)
+            Mono<TTSResponse> fileMono = sendTtsRequest(sentence, request)
                     .flatMap(audioBytes -> {
-                        String filename = "audio_" + System.currentTimeMillis() + "_" + index + ".mp3";
+                        String filename = "audio_" + request.getSpeaker() + "_" + System.currentTimeMillis() + "_" + index + ".mp3";
                         Path filePath = Paths.get(ttsDir, filename);
                         try {
                             Files.createDirectories(filePath.getParent());
                             Files.write(filePath, audioBytes);
-                            return Mono.just(filename);
+                            String fileUrl = ttsUrl + filename;
+                            return Mono.just(new TTSResponse(fileUrl, sentence));
                         } catch (IOException e) {
                             return Mono.error(new BusinessException(ErrorCode.TTS_FILE_SAVE_FAILED));
                         }
@@ -107,14 +108,14 @@ public class TTSService {
     public Mono<TTSResponse> generatePreviewAudio(TTSPreviewRequest request) {
         return sendTtsRequest(request.getText(), request)
                 .flatMap(audioBytes -> {
-                    String filename = "preview_" + System.currentTimeMillis() + "_0.mp3";
+                    String filename = "preview_" + request.getSpeaker() + "_" + System.currentTimeMillis() + "_0.mp3";
                     Path filePath = Paths.get(ttsDir, filename);
 
                     try {
                         Files.createDirectories(filePath.getParent());
                         Files.write(filePath, audioBytes);
                         String ttsPath = ttsUrl + filename;
-                        return Mono.just(new TTSResponse(ttsPath));
+                        return Mono.just(new TTSResponse(ttsPath, request.getText()));
                     } catch (IOException e) {
                         return Mono.error(new BusinessException(ErrorCode.TTS_FILE_SAVE_FAILED));
                     }
