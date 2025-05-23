@@ -8,13 +8,9 @@ import hello.backend.gcs.service.GCSService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -59,18 +55,6 @@ public class ImageFileService {
             byte[] imageBytes = Files.readAllBytes(localFile.toPath());
             String fileName = "final_" + imageId + ".png";
             return gcsService.uploadToGCS(imageBytes, userId, subDir, fileName, "image/png");
-        } catch (IOException e) {
-            throw new BusinessException(ErrorCode.GCS_UPLOAD_FAILED);
-        }
-    }
-
-    public String uploadCombinedImageToFinal(BufferedImage image, Long userId, Long imageId) {
-        try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ImageIO.write(image, "png", baos);
-            byte[] imageBytes = baos.toByteArray();
-            String fileName = "final_" + imageId + ".png";
-            return gcsService.uploadToGCS(imageBytes, userId.toString(), "final", fileName, "image/png");
         } catch (IOException e) {
             throw new BusinessException(ErrorCode.GCS_UPLOAD_FAILED);
         }

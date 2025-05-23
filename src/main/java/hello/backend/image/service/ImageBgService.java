@@ -43,11 +43,6 @@ public class ImageBgService {
     private final ImageFileService ImageFileService;
     private final GCSService gcsService;
 
-    private final Storage storage;
-
-    @Value("${spring.cloud.gcp.storage.bucket}")
-    private String bucketName;
-
     @Qualifier("draphArtWebClient")
     private final WebClient draphArtWebClient;
 
@@ -192,26 +187,11 @@ public class ImageBgService {
         Image image = imageRepository.findById(imageId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
 
-        String fileUrl = request.getFileName();  // 전체 URL
-        String bucketUrlPrefix = "https://storage.googleapis.com/" + bucketName + "/";
-        if (!fileUrl.startsWith(bucketUrlPrefix)) {
-            throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE);
-        }
-        String objectPath = fileUrl.substring(bucketUrlPrefix.length());
+        Path tempFile = gcsService.downloadToTempFile(request.getFileName(), "final_", ".png");
 
-        Blob blob = storage.get(bucketName, objectPath);
-        if (blob == null || !blob.exists()) {
-            throw new BusinessException(ErrorCode.IMAGE_NOT_FOUND);
-        }
+        String finalImageUrl = ImageFileService.chooseFinalImage(
+                tempFile.toFile(), image.getUser().getId().toString(), imageId, "final");
 
-        // Blob에서 바로 임시파일로 저장
-        Path tempFile = Files.createTempFile("final_", ".png");
-        try (InputStream in = Channels.newInputStream(blob.reader())) {
-            Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
-        }
-
-        // 임시파일을 final 폴더에 저장 (userId, imageId 등으로 경로 관리)
-        String finalImageUrl = ImageFileService.chooseFinalImage(tempFile.toFile(), image.getUser().getId().toString(), imageId, "final");
         image.setFinalImage(finalImageUrl);
         imageRepository.save(image);
 
