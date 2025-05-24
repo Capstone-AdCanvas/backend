@@ -27,6 +27,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.channels.Channels;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -41,11 +42,6 @@ public class ImageBgService {
     private final ImageRepository imageRepository;
     private final ImageFileService ImageFileService;
     private final GCSService gcsService;
-
-    private final Storage storage;
-
-    @Value("${spring.cloud.gcp.storage.bucket}")
-    private String bucketName;
 
     @Qualifier("draphArtWebClient")
     private final WebClient draphArtWebClient;
@@ -191,24 +187,11 @@ public class ImageBgService {
         Image image = imageRepository.findById(imageId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
 
-        String fileUrl = request.getFileName();  // 전체 URL
-        String bucketUrlPrefix = "https://storage.googleapis.com/" + bucketName + "/";
-        if (!fileUrl.startsWith(bucketUrlPrefix)) {
-            throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE);
-        }
-        String objectPath = fileUrl.substring(bucketUrlPrefix.length());
+        Path tempFile = gcsService.downloadToTempFile(request.getFileName(), "final_", ".png");
 
-        Blob blob = storage.get(bucketName, objectPath);
-        if (blob == null || !blob.exists()) {
-            throw new BusinessException(ErrorCode.IMAGE_NOT_FOUND);
-        }
+        String finalImageUrl = ImageFileService.chooseFinalImage(
+                tempFile.toFile(), image.getUser().getId().toString(), imageId, "final");
 
-        Path tempFile = Files.createTempFile("final_", ".png");
-        try (InputStream in = new URL(image.getProcessedImage()).openStream()) {
-            Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
-        }
-
-        String finalImageUrl = ImageFileService.chooseFinalImage(tempFile.toFile(), image.getUser().getId().toString(), imageId, "final");
         image.setFinalImage(finalImageUrl);
         imageRepository.save(image);
 

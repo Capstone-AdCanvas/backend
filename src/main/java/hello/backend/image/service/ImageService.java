@@ -1,24 +1,25 @@
 package hello.backend.image.service;
 
+import com.google.cloud.storage.Storage;
 import hello.backend.error.ErrorCode;
 import hello.backend.error.exception.BusinessException;
+import hello.backend.gcs.service.GCSService;
 import hello.backend.image.domain.Image;
-import hello.backend.image.dto.CombineImageRequest;
-import hello.backend.image.dto.CombineImageResponse;
-import hello.backend.image.dto.ImageResponse;
-import hello.backend.image.dto.OverlayItemRequest;
+import hello.backend.image.dto.*;
 import hello.backend.image.repository.ImageRepository;
 import hello.backend.user.domain.User;
 import hello.backend.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
@@ -32,9 +33,10 @@ public class ImageService {
     private final ImageRepository imageRepository;
     private final UserRepository userRepository;
     private final ImageFileService ImageFileService;
+    private final GCSService gcsService;
 
     // 이미지 업로드 (기본)
-    public ImageResponse uploadImage(Long userId, MultipartFile image) throws IOException {
+    public ImageUploadResponse uploadImage(Long userId, MultipartFile image) throws IOException {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
@@ -112,7 +114,8 @@ public class ImageService {
                     java.awt.Image scaledLogo = logoImage.getScaledInstance(logoWidth, logoHeight, java.awt.Image.SCALE_SMOOTH);
                     g2d.drawImage(scaledLogo, overlay.getX(), overlay.getY(), logoWidth, logoHeight, null);
                 } else if ("text".equalsIgnoreCase(overlay.getType())) {
-                    g2d.setFont(new Font(overlay.getFont(), Font.PLAIN, overlay.getSize()));
+                    Font font = new Font(overlay.getFont(), Font.PLAIN, overlay.getSize());
+                    g2d.setFont(font);
                     g2d.setColor(Color.decode(overlay.getColor()));
                     g2d.drawString(overlay.getText(), overlay.getX(), overlay.getY());
                 }
@@ -120,7 +123,22 @@ public class ImageService {
 
             g2d.dispose();
 
-            String finalImageUrl = ImageFileService.uploadCombinedImageToFinal(baseImage, image.getUser().getId(), image.getId());
+            String oldFinalImageUrl = image.getFinalImage();
+            gcsService.deleteByUrl(oldFinalImageUrl);
+
+            String newFileName = "final_combined_image_"+ System.currentTimeMillis() + "_" + image.getId() + ".png";
+            ByteArrayOutputStream os = new ByteArrayOutputStream();
+            ImageIO.write(baseImage, "png", os);
+            byte[] imageBytes = os.toByteArray();
+
+            String finalImageUrl = gcsService.uploadToGCS(
+                    imageBytes,
+                    image.getUser().getId().toString(),
+                    "final",
+                    newFileName,
+                    "image/png"
+            );
+
             image.setFinalImage(finalImageUrl);
             imageRepository.save(image);
 
@@ -131,8 +149,8 @@ public class ImageService {
         }
     }
 
-    private ImageResponse toOriginalImageResponse(Image image) {
-        return new ImageResponse(
+    private ImageUploadResponse toOriginalImageResponse(Image image) {
+        return new ImageUploadResponse(
                 image.getId(),
                 image.getUser().getId(),
                 image.getName(),

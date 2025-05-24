@@ -16,6 +16,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.channels.Channels;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -55,7 +56,6 @@ public class GCSService {
     public String uploadToGCS(byte[] imageBytes, String userId, String subDir, String fileName, String contentType) {
         String objectPath = "uploads/" + userId + "/" + subDir + "/" + fileName;
         BlobInfo blobInfo = BlobInfo.newBuilder(bucketName, objectPath)
-                .setAcl(List.of(Acl.of(Acl.User.ofAllUsers(), Acl.Role.READER)))
                 .setContentType(contentType)
                 .build();
 
@@ -89,5 +89,33 @@ public class GCSService {
                 throw new BusinessException(ErrorCode.GCS_FILE_DELETE_FAILED);
             }
         }
+    }
+
+    public void deleteByUrl(String fileUrl) {
+        String bucketUrlPrefix = "https://storage.googleapis.com/" + bucketName + "/";
+        if (fileUrl.startsWith(bucketUrlPrefix)) {
+            String objectPath = fileUrl.substring(bucketUrlPrefix.length());
+            storage.delete(bucketName, objectPath);
+        }
+    }
+
+    public Path downloadToTempFile(String fileUrl, String prefix, String suffix) throws IOException {
+        String bucketUrlPrefix = "https://storage.googleapis.com/" + bucketName + "/";
+        if (!fileUrl.startsWith(bucketUrlPrefix)) {
+            throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE);
+        }
+
+        String objectPath = fileUrl.substring(bucketUrlPrefix.length());
+        Blob blob = storage.get(bucketName, objectPath);
+        if (blob == null || !blob.exists()) {
+            throw new BusinessException(ErrorCode.IMAGE_NOT_FOUND);
+        }
+
+        Path tempFile = Files.createTempFile(prefix, suffix);
+        try (InputStream in = Channels.newInputStream(blob.reader())) {
+            Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
+        }
+
+        return tempFile;
     }
 }

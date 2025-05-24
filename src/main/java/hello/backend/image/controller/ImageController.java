@@ -2,6 +2,7 @@ package hello.backend.image.controller;
 import hello.backend.image.dto.CombineImageRequest;
 import hello.backend.image.dto.CombineImageResponse;
 import hello.backend.image.dto.ImageResponse;
+import hello.backend.image.dto.ImageUploadResponse;
 import hello.backend.image.service.ImageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -31,10 +32,10 @@ public class ImageController {
             @ApiResponse(responseCode = "415", description = "지원되지 않는 미디어 타입")
     })
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ImageResponse> uploadImage(
+    public ResponseEntity<ImageUploadResponse> uploadImage(
             @RequestParam("userId") Long userId,
             @RequestParam("image") MultipartFile image) throws IOException {
-        ImageResponse response = imageService.uploadImage(userId, image);
+        ImageUploadResponse response = imageService.uploadImage(userId, image);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
