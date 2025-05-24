@@ -19,6 +19,12 @@ public class WebConfig {
     @Value("${file.tts-url}")
     private String ttsUrl;
 
+    @Value("${file.video-dir}")
+    private String videoDir;
+
+    @Value("${file.video-url}")
+    private String videoUrl;
+
     @Value("${spring.cloud.gcp.storage.bucket}")
     private String bucketName;
 
@@ -38,6 +44,9 @@ public class WebConfig {
             public void addResourceHandlers(ResourceHandlerRegistry registry) {
                 registry.addResourceHandler(ttsUrl + "**")
                         .addResourceLocations("file:" + ttsDir + "/");
+
+                registry.addResourceHandler(videoUrl + "**")
+                        .addResourceLocations("file:" + videoDir + "/");
 
                 registry.addResourceHandler("/images/**")
                         .addResourceLocations("https://storage.googleapis.com/" + bucketName + "/")
