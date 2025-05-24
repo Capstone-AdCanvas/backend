@@ -33,7 +33,7 @@ public class ImageLogoService {
             throw new BusinessException(ErrorCode.INVALID_IMAGE_FILE);
         }
 
-        String savedFilePath = ImageFileService.saveFile(image, userId.toString(), "logo");
+        String savedFilePath = ImageFileService.saveLogoFile(image, userId.toString(), "logo");
 
         Logo adLogo = Logo.builder()
                 .user(user)
