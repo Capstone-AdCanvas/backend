@@ -98,6 +98,7 @@ public class MergeService {
         }
 
         if (ttsUrls != null && !ttsUrls.isEmpty()) {
+
             File silence = new File("src/main/resources/static/mp3/silence1s.mp3");
             List<File> ttsParts = new ArrayList<>();
 
