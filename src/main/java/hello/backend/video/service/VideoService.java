@@ -21,11 +21,18 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.units.qual.Temperature;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import ai.fal.client.exception.FalException;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -42,6 +49,12 @@ public class VideoService {
     private final Cache<String, TextToVideoRequest> requestTextCache;
     private final Cache<String, ImageToVideoRequest> requestImageCache;
     private final GCSService gcsService;
+
+    @Value("${file.video-dir}")
+    private String videoDir;
+
+    @Value("${file.video-url}")
+    private String videoFileUrl;
 
     //text-to-video(kling 모델)병렬 생성 - 비동기 큐
     @Transactional
@@ -172,9 +185,14 @@ public class VideoService {
         TextToVideoRequest cacheRequest = Optional.ofNullable(requestTextCache.getIfPresent(requestId))
                 .orElseThrow(() -> new BusinessException(ErrorCode.FAL_NOT_FOUND, "요청 정보를 찾을 수 없습니다."));
 
+        String savedUrl = downloadAndSaveVideo(
+                result.getAsJsonObject("video").get("url").getAsString(),
+                requestId
+        );
+
         return TextToVideoResponse.builder()
                 .status(resultStatus)
-                .videoUrl(result.getAsJsonObject("video").get("url").getAsString())
+                .videoUrl(savedUrl)
                 .aspect_ratio(cacheRequest.getAspect_ratio())
                 .duration(cacheRequest.getDuration())
                 .createdAt(LocalDateTime.now())
@@ -210,13 +228,34 @@ public class VideoService {
         ImageToVideoRequest cacheRequest = Optional.ofNullable(requestImageCache.getIfPresent(requestId))
                 .orElseThrow(() -> new BusinessException(ErrorCode.FAL_NOT_FOUND, "요청 정보를 찾을 수 없습니다."));
 
+        String savedUrl = downloadAndSaveVideo(
+                result.getAsJsonObject("video").get("url").getAsString(),
+                requestId
+        );
+
         return ImageToVideoResponse.builder()
                 .status(resultStatus)
-                .videoUrl(result.getAsJsonObject("video").get("url").getAsString())
+                .videoUrl(savedUrl)
                 .aspect_ratio(cacheRequest.getAspect_ratio())
                 .duration(cacheRequest.getDuration())
                 .createdAt(LocalDateTime.now())
                 .build();
+    }
+
+    public String downloadAndSaveVideo(String videoUrl, String requestId) {
+        try (InputStream in = new URL(videoUrl).openStream()) {
+            String fileName = requestId + ".mp4";
+            Path saveDir = Paths.get(videoDir);
+            Files.createDirectories(saveDir);
+
+            Path savePath = saveDir.resolve(fileName);
+            Files.copy(in, savePath, StandardCopyOption.REPLACE_EXISTING);
+
+            return videoFileUrl + fileName;
+
+        } catch (IOException e) {
+            throw new BusinessException(ErrorCode.FILE_SAVE_FAILED);
+        }
     }
     //--------------------------------------------------------------------------------------------------
     //video 저장

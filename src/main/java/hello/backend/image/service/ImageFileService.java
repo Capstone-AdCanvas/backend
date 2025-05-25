@@ -11,6 +11,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -33,6 +37,50 @@ public class ImageFileService {
         } catch (IOException e) {
             throw new BusinessException(ErrorCode.GCS_UPLOAD_FAILED);
         }
+    }
+
+    public String saveLogoFile(MultipartFile image, String userId, String subDir) {
+        String extension = "png";
+        String contentType = "image/png";
+        String newFileName = UUID.randomUUID() + "." + extension;
+
+        try {
+            BufferedImage originalImage = ImageIO.read(image.getInputStream());
+            BufferedImage resizedImage = resizeWithPadding(originalImage, 200, 200);
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ImageIO.write(resizedImage, extension, baos);
+            byte[] resizedImageBytes = baos.toByteArray();
+
+            return gcsService.uploadToGCS(resizedImageBytes, userId, subDir, newFileName, contentType);
+
+        } catch (IOException e) {
+            throw new BusinessException(ErrorCode.GCS_UPLOAD_FAILED);
+        }
+    }
+
+    private BufferedImage resizeWithPadding(BufferedImage originalImage, int targetWidth, int targetHeight) {
+        int originalWidth = originalImage.getWidth();
+        int originalHeight = originalImage.getHeight();
+
+        float scale = Math.min((float) targetWidth / originalWidth, (float) targetHeight / originalHeight);
+        int scaledWidth = Math.round(originalWidth * scale);
+        int scaledHeight = Math.round(originalHeight * scale);
+
+        int x = (targetWidth - scaledWidth) / 2;
+        int y = (targetHeight - scaledHeight) / 2;
+
+        BufferedImage outputImage = new BufferedImage(targetWidth, targetHeight, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = outputImage.createGraphics();
+
+        g.setComposite(AlphaComposite.Clear);
+        g.fillRect(0, 0, targetWidth, targetHeight);
+        g.setComposite(AlphaComposite.SrcOver);
+
+        g.drawImage(originalImage.getScaledInstance(scaledWidth, scaledHeight, Image.SCALE_SMOOTH), x, y, null);
+        g.dispose();
+
+        return outputImage;
     }
 
     public String saveBgRemoveFile(byte[] imageBytes, String userId, Long imageId, String subDir) {

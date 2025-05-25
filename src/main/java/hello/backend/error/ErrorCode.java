@@ -57,6 +57,7 @@ public enum ErrorCode {
     // VIDEO
     VIDEO_DUPLICATE_NAME(HttpStatus.BAD_REQUEST, "VID_VS01", "이미 존재하는 영상 이름입니다."),
     VIDEO_URL_NOT_FOUND(HttpStatus.NOT_FOUND, "VIDEO_URL_404", "비디오 url을 찾을 수 없습니다."),
+    FILE_SAVE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "FILE_SAVE_FAILED", "파일 저장에 실패했습니다."),
 
     // AUDIO
     AUDIO_NOT_FOUND(HttpStatus.NOT_FOUND, "AUDIO_URL_404", "오디오를 찾을 수 없습니다.");

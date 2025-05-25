@@ -47,6 +47,7 @@ target/
 .env
 application.yml
 ttsfile/
+videoFile/
 
 /src/main/resources/static/audioVideo/*
 
