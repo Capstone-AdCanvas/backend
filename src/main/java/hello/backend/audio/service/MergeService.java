@@ -21,6 +21,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -32,6 +33,12 @@ public class MergeService {
 
     @Value("${file.tts-dir}")
     private String ttsDir;
+
+    @Value("${file.video-dir}")
+    private String videoDir;
+
+    @Value("${file.video-url}")
+    private String videoUrl;
 
     @Transactional
     public File mergeVideoAudio(List<String> videoUrls, String tema, List<String> ttsUrls) throws IOException {
@@ -56,7 +63,9 @@ public class MergeService {
         File tempDir = new File("temp_" + uuid);
         if (!tempDir.exists()) tempDir.mkdirs();
 
-        List<File> downloadedVideos = downloadVideos(videoUrls, tempDir);
+        List<File> downloadedVideos = videoUrls.stream()
+                .map(url -> new File(videoDir, Paths.get(url).getFileName().toString()))
+                .collect(Collectors.toList());
         File concatListFile = new File(tempDir, "concat_list.txt");
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(concatListFile))) {
             for (File video : downloadedVideos) {
