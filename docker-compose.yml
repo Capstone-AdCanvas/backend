@@ -39,10 +39,85 @@ services:
       - mydbdata:/var/lib/mysql
     networks:
       - Adcanvas-Net
+
+  mysql-exporter:
+    image: prom/mysqld-exporter:main
+    container_name: mysql-exporter
+    ports:
+      - "9104:9104"
+    volumes:
+      - ./exporter/my-config.conf:/cfg/my-config.conf
+    environment:
+      - DATA_SOURCE_NAME=${MYSQL_EXPORTER_DSN}
+      - collect.info_schema.tablestats=true
+      - collect.info_schema.userstats=true
+      - collect.info_schema.query_response_time=true
+      - collect.auto_increment.columns=true
+      - collect.binlog_size=true
+      - collect.perf_schema.eventsstatements=true
+      - collect.perf_schema.eventswaits=true
+      - collect.perf_schema.file_events=true
+      - collect.perf_schema.indexiowaits=true
+      - collect.perf_schema.tableiowaits=true
+      - collect.perf_schema.tablelocks=true
+    networks:
+      - Adcanvas-Net
+    depends_on:
+      - db
+    command:
+      - '--config.my-cnf=/cfg/my-config.conf'
+
+  node-exporter:
+    image: quay.io/prometheus/node-exporter:v1.8.1
+    container_name: node-exporter
+    ports:
+      - "9100:9100"
+    command:
+      - '--path.rootfs=/host'
+    restart: unless-stopped
+    volumes:
+      - '/:/host:ro'
+    networks:
+      - Adcanvas-Net
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: cadvisor-example
+    ports:
+      - "8081:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    networks:
+      - Adcanvas-Net
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    networks:
+      - Adcanvas-Net
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    volumes:
+      - ./grafana:/etc/grafana/provisioning
+      - ./grafana/data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - Adcanvas-Net
+
 volumes:
   mydbdata:
 
-
 networks:
   Adcanvas-Net:
-    external: true

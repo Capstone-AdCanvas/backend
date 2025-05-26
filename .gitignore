@@ -48,6 +48,10 @@ target/
 application.yml
 ttsfile/
 videoFile/
+exporter/
+grafana/data/
+grafana/**/secrets.*
+grafana/**/credentials.*
 
 /src/main/resources/static/audioVideo/*
 
