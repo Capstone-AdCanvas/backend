@@ -1,0 +1,64 @@
+spring:
+  application:
+    name: backend
+  config:
+    import: file:.env[.properties]
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+  mvc:
+  web:
+    resources:
+      add-mappings: true
+  cloud:
+    gcp:
+      storage:
+        project-id: ${GCP_PROJECT_ID}
+        credentials:
+          location: classpath:project-adcanvas-7198154f5844.json
+        bucket: ${GCP_BUCKET_NAME}
+
+fal:
+  token: ${FAL_KEY}
+
+deepseek:
+  api:
+    key: ${DEEPSEEK_KEY}
+    url: https://api.deepseek.com/v1/chat/completions
+    model: deepseek-chat
+
+draph:
+  art:
+    url: ${DRAPH_ART_URL}
+    username: ${DRAPH_ART_USERNAME}
+    token: ${DRAPH_ART_TOKEN}
+
+ffmpeg:
+  mpeg: ${FFMPEG_MPEG}
+  probe: ${FFMPEG_PROBE}
+  save-path: ${FFMPEG_SAVE_PATH}
+
+clova:
+  tts:
+    url: ${CLOVA_TTS_URL}
+    client-id: ${CLOVA_TTS_CLIENT_ID}
+    client-secret: ${CLOVA_TTS_CLIENT_SECRET}
+
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS}
+
+file:
+  tts-dir: ${user.dir}/ttsfile
+  tts-url: /ttsfile/
+  video-dir: ${user.dir}/videoFile
+  video-url: /videoFile/

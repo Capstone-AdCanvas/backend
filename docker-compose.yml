@@ -19,6 +19,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    networks:
+      - Adcanvas-Net
 
   db:
     image: mysql:8.0
@@ -35,5 +37,12 @@ services:
       retries: 3
     volumes:
       - mydbdata:/var/lib/mysql
+    networks:
+      - Adcanvas-Net
 volumes:
   mydbdata:
+
+
+networks:
+  Adcanvas-Net:
+    external: true
