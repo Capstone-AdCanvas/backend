@@ -19,3 +19,9 @@ EXPOSE 8080
 
 # 애플리케이션 실행
 ENTRYPOINT ["java", "-jar", "app.jar"]
+
+# 빌드 단계에서 생성된 JAR 파일을 복사
+COPY --from=builder /home/gradle/project/build/libs/*.jar app.jar
+
+# ✅ GCP 인증 JSON 복사
+COPY --from=builder /home/gradle/project/src/main/resources/project-adcanvas-7198154f5844.json project-adcanvas-7198154f5844.json
