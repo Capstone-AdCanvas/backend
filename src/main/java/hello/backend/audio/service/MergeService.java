@@ -55,6 +55,7 @@ public class MergeService {
                 case "wave"  -> "wave.mp3";
                 case "fun"   -> "fun.mp3";
                 case "sad"   -> "sad.mp3";
+                case "piano"   -> "piano.mp3";
                 default -> throw new BusinessException(ErrorCode.AUDIO_NOT_FOUND, "요청 정보를 찾을 수 없습니다.");
             };
         }
