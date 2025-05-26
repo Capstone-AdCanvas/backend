@@ -14,9 +14,6 @@ WORKDIR /app
 # 빌드 단계에서 생성된 JAR 파일을 복사
 COPY --from=builder /home/gradle/project/build/libs/*.jar app.jar
 
-# GCP 인증 JSON 복사
-COPY --from=builder /home/gradle/project/src/main/resources/project-adcanvas-7198154f5844.json project-adcanvas-7198154f5844.json
-
 # 외부 통신 포트 지정
 EXPOSE 8080
 
