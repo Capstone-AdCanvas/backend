@@ -10,6 +10,5 @@ import lombok.NoArgsConstructor;
 public class LogoResponse {
     private Long id;
     private Long userId;
-    private String name;
     private String logoImage;
 }
