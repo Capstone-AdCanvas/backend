@@ -13,7 +13,6 @@ WORKDIR /app
 
 # 빌드 단계에서 생성된 JAR 파일을 복사
 COPY --from=builder /home/gradle/project/build/libs/*.jar app.jar
-
 # 외부 통신 포트 지정
 EXPOSE 8080
 
