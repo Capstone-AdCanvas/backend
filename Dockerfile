@@ -11,6 +11,16 @@ RUN ./gradlew clean bootJar --no-daemon
 FROM eclipse-temurin:17-jdk
 WORKDIR /app
 
+# FFmpeg 설치
+RUN apt-get update && \
+    apt-get install -y ffmpeg && \
+    rm -rf /var/lib/apt/lists/*
+
+# 필요한 디렉터리 생성
+RUN mkdir -p /app/static/audioVideo \
+    /app/static/videos \
+    /app/static/tts
+
 # 빌드 단계에서 생성된 JAR 파일을 복사
 COPY --from=builder /home/gradle/project/build/libs/*.jar app.jar
 # 외부 통신 포트 지정
