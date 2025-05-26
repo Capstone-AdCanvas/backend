@@ -25,7 +25,7 @@ spring:
       storage:
         project-id: ${GCP_PROJECT_ID}
         credentials:
-          location: classpath:project-adcanvas-7198154f5844.json
+          location: ${GCP_CREDENTIALS_JSON_PATH}
         bucket: ${GCP_BUCKET_NAME}
 
 fal:
